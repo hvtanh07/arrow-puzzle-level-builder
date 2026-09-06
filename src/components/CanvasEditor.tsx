@@ -48,6 +48,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
     arrowId: string;
     startMouse: Point;
     origPoints: Point[];
+    hasMoved: boolean;
   } | null>(null);
 
   // Zoom and Pan states
@@ -112,6 +113,31 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
     setPan({ x: 0, y: 0 });
   };
 
+  // Tool change listener: clear drawing when switching away from draw mode
+  useEffect(() => {
+    if (tool !== 'draw') {
+      setDrawPoints([]);
+    } else {
+      onSelectArrowId(null);
+    }
+  }, [tool]);
+
+  // Global mouseup listener for clean drag release anywhere
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      setIsPanning(false);
+      if (dragVertex) setDragVertex(null);
+      if (dragArrow) {
+        if (dragArrow.hasMoved) {
+          sound.playPop();
+        }
+        setDragArrow(null);
+      }
+    };
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, [dragVertex, dragArrow]);
+
   // Keyboard shortcut listener for finish / cancel
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -119,7 +145,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
         return;
       }
       if (e.key === 'Enter') {
-        finishDrawing();
+        finishDrawing(true);
       } else if (e.key === 'Escape') {
         cancelDrawing();
         onSelectArrowId(null);
@@ -127,13 +153,39 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [drawPoints, activeColorId]);
+  }, [drawPoints, activeColorId, hoverGridPos, tool]);
 
-  // Handle Mouse Down (Right-click starts panning)
+  // Handle Arrow Mouse Down (Select mode: select & start drag-move)
+  const handleArrowMouseDown = (arrow: Arrow, e: React.MouseEvent) => {
+    if (tool !== 'select') return;
+    if (e.button !== 0) return; // Left mouse button only
+
+    e.stopPropagation();
+    e.preventDefault();
+
+    onSelectArrowId(arrow.id);
+
+    const { gx, gy } = clientToGrid(e);
+    setDragArrow({
+      arrowId: arrow.id,
+      startMouse: { x: gx, y: gy },
+      origPoints: arrow.points.map((p) => ({ ...p })),
+      hasMoved: false,
+    });
+  };
+
+  // Handle Mouse Down on Canvas (Right-click finishes arrow if drawing, or pans)
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button === 2) {
       // Right mouse button
       e.preventDefault();
+      e.stopPropagation();
+
+      if (tool === 'draw' && drawPoints.length > 0) {
+        finishDrawing(true);
+        return;
+      }
+
       setIsPanning(true);
       panStartRef.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
     }
@@ -152,8 +204,8 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
     const { gx, gy } = clientToGrid(e);
     setHoverGridPos({ x: gx, y: gy });
 
-    // If dragging vertex
-    if (dragVertex) {
+    // If dragging single vertex handle
+    if (dragVertex && tool === 'select') {
       const arrow = arrows.find((a) => a.id === dragVertex.arrowId);
       if (!arrow) return;
 
@@ -166,22 +218,39 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
         );
         onChangeArrows(updated);
       }
+      return;
     }
 
-    // If dragging whole arrow
-    if (dragArrow) {
+    // If dragging whole arrow in select mode
+    if (dragArrow && tool === 'select') {
       const dx = gx - dragArrow.startMouse.x;
       const dy = gy - dragArrow.startMouse.y;
-      if (dx !== 0 || dy !== 0) {
-        const shiftedPoints = dragArrow.origPoints.map((p) => ({
-          x: Math.max(0, Math.min(gridSize.width - 1, p.x + dx)),
-          y: Math.max(0, Math.min(gridSize.height - 1, p.y + dy)),
-        }));
 
-        const updated = arrows.map((a) =>
-          a.id === dragArrow.arrowId ? { ...a, points: shiftedPoints } : a
+      const minX = Math.min(...dragArrow.origPoints.map((p) => p.x));
+      const maxX = Math.max(...dragArrow.origPoints.map((p) => p.x));
+      const minY = Math.min(...dragArrow.origPoints.map((p) => p.y));
+      const maxY = Math.max(...dragArrow.origPoints.map((p) => p.y));
+
+      const clampedDx = Math.max(-minX, Math.min(gridSize.width - 1 - maxX, dx));
+      const clampedDy = Math.max(-minY, Math.min(gridSize.height - 1 - maxY, dy));
+
+      const shiftedPoints = dragArrow.origPoints.map((p) => ({
+        x: p.x + clampedDx,
+        y: p.y + clampedDy,
+      }));
+
+      const target = arrows.find((a) => a.id === dragArrow.arrowId);
+      if (target) {
+        const changed = shiftedPoints.some(
+          (p, i) => p.x !== target.points[i]?.x || p.y !== target.points[i]?.y
         );
-        onChangeArrows(updated);
+        if (changed) {
+          setDragArrow((prev) => (prev ? { ...prev, hasMoved: true } : null));
+          const updated = arrows.map((a) =>
+            a.id === dragArrow.arrowId ? { ...a, points: shiftedPoints } : a
+          );
+          onChangeArrows(updated);
+        }
       }
     }
   };
@@ -192,10 +261,15 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
       setIsPanning(false);
     }
     if (dragVertex) setDragVertex(null);
-    if (dragArrow) setDragArrow(null);
+    if (dragArrow) {
+      if (dragArrow.hasMoved) {
+        sound.playPop();
+      }
+      setDragArrow(null);
+    }
   };
 
-  // Handle Canvas Click
+  // Handle Canvas Click (Left click only)
   const handleCanvasClick = (e: React.MouseEvent) => {
     // Only process primary click (left button)
     if (e.button !== 0) return;
@@ -205,6 +279,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
     if (tool === 'draw') {
       sound.playPop();
       if (drawPoints.length === 0) {
+        // Starting point is the ARROW HEAD!
         setDrawPoints([{ x: gx, y: gy }]);
       } else {
         const last = drawPoints[drawPoints.length - 1];
@@ -226,23 +301,55 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
         setDrawPoints([...drawPoints, { x: nextX, y: nextY }]);
       }
     } else if (tool === 'select') {
-      onSelectArrowId(null);
+      if (!dragArrow || !dragArrow.hasMoved) {
+        onSelectArrowId(null);
+      }
     }
   };
 
-  // Finish drawn arrow
-  const finishDrawing = () => {
-    if (drawPoints.length < 2) {
+  // Finish drawn arrow (Right-click, Enter, or Finish Button)
+  // Starting point drawPoints[0] is the ARROW HEAD!
+  const finishDrawing = (includeHover: boolean = false) => {
+    if (tool !== 'draw') return;
+
+    let rawPoints = [...drawPoints];
+
+    // If only 1 point placed (head), and user is hovering over another grid cell,
+    // include it to allow quick 2-point creation in 1 left-click + 1 right-click!
+    if (includeHover && rawPoints.length === 1 && hoverGridPos) {
+      const last = rawPoints[0];
+      const dx = Math.abs(hoverGridPos.x - last.x);
+      const dy = Math.abs(hoverGridPos.y - last.y);
+      if (dx > 0 || dy > 0) {
+        let nextX = hoverGridPos.x;
+        let nextY = hoverGridPos.y;
+        if (dx >= dy) {
+          nextY = last.y;
+        } else {
+          nextX = last.x;
+        }
+        if (nextX !== last.x || nextY !== last.y) {
+          rawPoints.push({ x: nextX, y: nextY });
+        }
+      }
+    }
+
+    if (rawPoints.length < 2) {
       setDrawPoints([]);
       return;
     }
 
-    // Remove collinear redundant points
-    const cleaned: Point[] = [drawPoints[0]];
-    for (let i = 1; i < drawPoints.length - 1; i++) {
+    // CRITICAL: The starting point (rawPoints[0]) is the ARROW HEAD!
+    // In our arrow data model, points[points.length - 1] is the head.
+    // So we reverse rawPoints: [tail, ..., head].
+    const reversed = [...rawPoints].reverse();
+
+    // Clean collinear redundant points
+    const cleaned: Point[] = [reversed[0]];
+    for (let i = 1; i < reversed.length - 1; i++) {
       const prev = cleaned[cleaned.length - 1];
-      const cur = drawPoints[i];
-      const next = drawPoints[i + 1];
+      const cur = reversed[i];
+      const next = reversed[i + 1];
 
       const sameHoriz = prev.y === cur.y && cur.y === next.y;
       const sameVert = prev.x === cur.x && cur.x === next.x;
@@ -251,7 +358,12 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
         cleaned.push(cur);
       }
     }
-    cleaned.push(drawPoints[drawPoints.length - 1]);
+    cleaned.push(reversed[reversed.length - 1]);
+
+    if (cleaned.length < 2) {
+      setDrawPoints([]);
+      return;
+    }
 
     const newArrow: Arrow = {
       id: `arrow_${Date.now().toString(36).substr(-4)}`,
@@ -261,7 +373,6 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 
     sound.playClick();
     onChangeArrows([...arrows, newArrow]);
-    onSelectArrowId(newArrow.id);
     setDrawPoints([]);
   };
 
@@ -271,21 +382,31 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
   };
 
   // Live preview points during drawing
-  let previewPoints: Point[] = [...drawPoints];
-  if (drawPoints.length > 0 && hoverGridPos) {
-    const last = drawPoints[drawPoints.length - 1];
-    let nextX = hoverGridPos.x;
-    let nextY = hoverGridPos.y;
-    const dx = Math.abs(hoverGridPos.x - last.x);
-    const dy = Math.abs(hoverGridPos.y - last.y);
+  // rawPoints in click order: [Head (drawPoints[0]), point1, ..., pointN, hoverPoint?]
+  // Reversed for ArrowRenderer so head is at points[points.length - 1]:
+  let previewArrowPoints: Point[] | null = null;
+  if (tool === 'draw' && drawPoints.length > 0) {
+    const rawPreview: Point[] = [...drawPoints];
+    if (hoverGridPos) {
+      const last = drawPoints[drawPoints.length - 1];
+      let nextX = hoverGridPos.x;
+      let nextY = hoverGridPos.y;
+      const dx = Math.abs(hoverGridPos.x - last.x);
+      const dy = Math.abs(hoverGridPos.y - last.y);
 
-    if (dx >= dy) {
-      nextY = last.y;
-    } else {
-      nextX = last.x;
+      if (dx >= dy) {
+        nextY = last.y;
+      } else {
+        nextX = last.x;
+      }
+
+      if (nextX !== last.x || nextY !== last.y) {
+        rawPreview.push({ x: nextX, y: nextY });
+      }
     }
-    if (nextX !== last.x || nextY !== last.y) {
-      previewPoints.push({ x: nextX, y: nextY });
+
+    if (rawPreview.length >= 2) {
+      previewArrowPoints = [...rawPreview].reverse();
     }
   }
 
@@ -333,25 +454,30 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
-      onContextMenu={(e) => e.preventDefault()}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (tool === 'draw' && drawPoints.length > 0) {
+          finishDrawing(true);
+        }
+      }}
     >
       {/* Drawing active banner */}
-      {drawPoints.length > 0 && (
-        <div className="bg-blue-600 text-white px-4 py-2 text-xs font-semibold flex items-center justify-between shadow-xs z-10 animate-in slide-in-from-top-2 duration-150">
+      {tool === 'draw' && drawPoints.length > 0 && (
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 text-xs font-semibold flex items-center justify-between shadow-md z-10 animate-in slide-in-from-top-2 duration-150">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
             <span>
-              Drawing Arrow: Click to bend. Press <b>Enter</b> or click <b>Finish</b> when done!
+              <b>Drawing:</b> First point is <b>Arrow Head</b>. Left-click to add points • <b>Right-click</b> to finish!
             </span>
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={finishDrawing}
-              disabled={drawPoints.length < 2}
-              className="px-3 py-1 bg-white text-blue-700 hover:bg-blue-50 disabled:opacity-50 rounded-lg font-bold shadow-xs text-xs flex items-center gap-1 transition-all"
+              onClick={() => finishDrawing(true)}
+              className="px-3 py-1 bg-white text-blue-700 hover:bg-blue-50 rounded-lg font-bold shadow-xs text-xs flex items-center gap-1 transition-all"
             >
               <Check className="w-3.5 h-3.5" />
-              Finish Arrow
+              Finish Arrow (Right-Click)
             </button>
             <button
               onClick={cancelDrawing}
@@ -398,9 +524,18 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
       </div>
 
       {/* Helper Navigation Hint (Bottom-Right) */}
-      <div className="absolute bottom-5 right-5 z-20 hidden md:flex items-center gap-2 bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-full shadow-md border border-slate-200/80 text-[11px] text-slate-500 font-medium">
-        <Move className="w-3.5 h-3.5 text-blue-500" />
-        <span>Right-click + drag to pan • Scroll to zoom</span>
+      <div className="absolute bottom-5 right-5 z-20 hidden md:flex items-center gap-2 bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-md border border-slate-200/80 text-[11px] text-slate-600 font-medium">
+        {tool === 'draw' ? (
+          <span>
+            <b>Draw Mode:</b> Left-click Head → Left-click Points → <b>Right-click</b> to End
+          </span>
+        ) : (
+          <span>
+            <b>Select Mode:</b> Drag arrow to move & release to place • Click to select
+          </span>
+        )}
+        <span className="text-slate-300">|</span>
+        <span className="text-slate-400">Scroll to zoom • Right-click drag to pan</span>
       </div>
 
       {/* Main Canvas SVG Area (Centered in Viewport with Pan & Zoom) */}
@@ -416,8 +551,15 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
             ref={svgRef}
             width={totalSvgWidth}
             height={totalSvgHeight}
-            className="cursor-crosshair block"
+            className={tool === 'draw' ? 'cursor-crosshair block' : 'cursor-default block'}
             onClick={handleCanvasClick}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (tool === 'draw' && drawPoints.length > 0) {
+                finishDrawing(true);
+              }
+            }}
           >
             {/* Board Background (Symmetrically Centered Card!) */}
             <rect
@@ -556,6 +698,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
             {arrows.map((arr) => {
               const isSelected = arr.id === selectedArrowId;
               const isDeadlocked = solvability.deadlockedArrowIds.includes(arr.id);
+              const isDraggingThis = dragArrow?.arrowId === arr.id;
 
               return (
                 <ArrowRenderer
@@ -566,10 +709,21 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
                   isSelected={isSelected}
                   isDeadlocked={isDeadlocked}
                   showHandles={tool === 'select'}
+                  isDragging={isDraggingThis}
+                  interactive={tool === 'select'}
                   onClick={(e) => {
-                    e.stopPropagation();
-                    sound.playClick();
-                    onSelectArrowId(arr.id);
+                    if (tool === 'select') {
+                      e.stopPropagation();
+                      if (!dragArrow?.hasMoved) {
+                        sound.playClick();
+                        onSelectArrowId(arr.id);
+                      }
+                    }
+                  }}
+                  onArrowMouseDown={(e) => {
+                    if (tool === 'select') {
+                      handleArrowMouseDown(arr, e);
+                    }
                   }}
                   onVertexDragStart={(idx) => {
                     if (tool === 'select') {
@@ -580,18 +734,64 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
               );
             })}
 
-            {/* Currently drawing preview arrow */}
-            {previewPoints.length >= 2 && (
+            {/* Currently drawing preview arrow (Head-First!) */}
+            {tool === 'draw' && previewArrowPoints && previewArrowPoints.length >= 2 && (
               <ArrowRenderer
                 arrow={{
                   id: 'temp_draw',
                   color: activeColorId,
-                  points: previewPoints,
+                  points: previewArrowPoints,
                 }}
                 cellSize={cellSize}
                 padding={padding}
                 isSelected={true}
+                interactive={false}
               />
+            )}
+
+            {/* Pulsing Arrow Head & Placed Turn Markers while drawing */}
+            {tool === 'draw' && drawPoints.length > 0 && (
+              <g className="pointer-events-none">
+                {/* Outer pulsing ring on Arrow Head */}
+                <circle
+                  cx={padding + drawPoints[0].x * cellSize}
+                  cy={padding + drawPoints[0].y * cellSize}
+                  r={cellSize * 0.44}
+                  fill={activeColorHex}
+                  fillOpacity={0.25}
+                  className="animate-ping"
+                />
+                {/* Glowing Head badge */}
+                <circle
+                  cx={padding + drawPoints[0].x * cellSize}
+                  cy={padding + drawPoints[0].y * cellSize}
+                  r={12}
+                  fill={activeColorHex}
+                  stroke="#ffffff"
+                  strokeWidth={2.5}
+                  style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.35))' }}
+                />
+                <text
+                  x={padding + drawPoints[0].x * cellSize}
+                  y={padding + drawPoints[0].y * cellSize + 3}
+                  textAnchor="middle"
+                  className="text-[9px] font-black fill-white pointer-events-none select-none"
+                >
+                  ▲
+                </text>
+                {/* Placed turn dots */}
+                {drawPoints.slice(1).map((pt, idx) => (
+                  <circle
+                    key={`placed-turn-${idx}`}
+                    cx={padding + pt.x * cellSize}
+                    cy={padding + pt.y * cellSize}
+                    r={6}
+                    fill="#ffffff"
+                    stroke={activeColorHex}
+                    strokeWidth={2.5}
+                  />
+                ))}
+              </g>
             )}
 
             {/* Hover Snap Indicator */}

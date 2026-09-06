@@ -1,7 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { Arrow, Level } from '../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { Arrow, Level, Point } from '../types';
 import { ArrowRenderer } from './ArrowRenderer';
-import { analyzeArrowExit, getDirectionVector, getHeadDirection } from '../utils/geometry';
+import {
+  analyzeArrowExit,
+  getDirectionVector,
+  getHeadDirection,
+  getExtendedTrack,
+  computePolylineLengths,
+  slicePolyline,
+} from '../utils/geometry';
 import { getColorHex } from '../constants/colors';
 import { sound } from '../utils/sound';
 import confetti from 'canvas-confetti';
@@ -37,12 +44,27 @@ export const PlayTestView: React.FC<PlayTestViewProps> = ({
   const [activeArrows, setActiveArrows] = useState<Arrow[]>([]);
   const [lives, setLives] = useState<number>(3);
   const [blockedTapId, setBlockedTapId] = useState<string | null>(null);
-  const [escapingArrowId, setEscapingArrowId] = useState<string | null>(null);
+  const [escapingArrowAnim, setEscapingArrowAnim] = useState<{
+    arrowId: string;
+    arrow: Arrow;
+    currentPoints: Point[];
+  } | null>(null);
   const [hintArrowId, setHintArrowId] = useState<string | null>(null);
   const [isWon, setIsWon] = useState<boolean>(false);
   const [isGameOver, setIsGameOver] = useState<boolean>(false);
   const [phoneFrame, setPhoneFrame] = useState<boolean>(true);
   const [movesCount, setMovesCount] = useState<number>(0);
+
+  const animFrameRef = useRef<number | null>(null);
+
+  // Clean up animation on unmount
+  useEffect(() => {
+    return () => {
+      if (animFrameRef.current !== null) {
+        cancelAnimationFrame(animFrameRef.current);
+      }
+    };
+  }, []);
 
   // The 3 Boosters States
   const [isRemovalMode, setIsRemovalMode] = useState<boolean>(false);
@@ -54,10 +76,14 @@ export const PlayTestView: React.FC<PlayTestViewProps> = ({
   }, [level]);
 
   const resetGame = () => {
+    if (animFrameRef.current !== null) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
     setActiveArrows([...level.arrows]);
     setLives(3);
     setBlockedTapId(null);
-    setEscapingArrowId(null);
+    setEscapingArrowAnim(null);
     setHintArrowId(null);
     setIsWon(false);
     setIsGameOver(false);
@@ -67,7 +93,7 @@ export const PlayTestView: React.FC<PlayTestViewProps> = ({
   };
 
   const handleArrowTap = (arrowId: string) => {
-    if (isWon || isGameOver || escapingArrowId) return;
+    if (isWon || isGameOver || escapingArrowAnim) return;
 
     // Booster 2: If in "Remove Any Arrow" mode, remove tapped arrow directly!
     if (isRemovalMode) {
@@ -109,27 +135,71 @@ export const PlayTestView: React.FC<PlayTestViewProps> = ({
         setIsGameOver(true);
       }
     } else {
-      // FREE! ESCAPE!
+      // FREE! ESCAPE WITH SLITHER ANIMATION!
       sound.playWhoosh();
-      setEscapingArrowId(arrowId);
       setHintArrowId(null);
 
-      setTimeout(() => {
-        const remaining = activeArrows.filter((a) => a.id !== arrowId);
-        setActiveArrows(remaining);
-        setEscapingArrowId(null);
+      // Compute extended polyline track and cumulative distances
+      const origPoints = arrow.points;
+      const exitDist = Math.max(level.gridSize.width, level.gridSize.height) + origPoints.length + 5;
+      const track = getExtendedTrack(origPoints, exitDist);
+      const cumLengths = computePolylineLengths(track);
+      const arrowLength = cumLengths[origPoints.length - 1];
+      const totalTrackDist = cumLengths[cumLengths.length - 1];
+      const totalTravel = totalTrackDist - arrowLength;
 
-        // Check if won
-        if (remaining.length === 0) {
-          sound.playVictory();
-          setIsWon(true);
-          confetti({
-            particleCount: 120,
-            spread: 70,
-            origin: { y: 0.6 },
-          });
+      const durationMs = 420;
+      const startTime = performance.now();
+
+      if (animFrameRef.current !== null) {
+        cancelAnimationFrame(animFrameRef.current);
+      }
+
+      const animateStep = (now: number) => {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / durationMs, 1);
+
+        // Smooth power curve: arrow accelerates cleanly along polyline
+        const easedProgress = Math.pow(progress, 1.4);
+        const currentDist = easedProgress * totalTravel;
+
+        const currentPoints = slicePolyline(
+          track,
+          cumLengths,
+          currentDist,
+          currentDist + arrowLength
+        );
+
+        setEscapingArrowAnim({
+          arrowId: arrow.id,
+          arrow,
+          currentPoints,
+        });
+
+        if (progress < 1) {
+          animFrameRef.current = requestAnimationFrame(animateStep);
+        } else {
+          // Animation complete!
+          animFrameRef.current = null;
+          setEscapingArrowAnim(null);
+
+          const remaining = activeArrows.filter((a) => a.id !== arrowId);
+          setActiveArrows(remaining);
+
+          // Check if won
+          if (remaining.length === 0) {
+            sound.playVictory();
+            setIsWon(true);
+            confetti({
+              particleCount: 120,
+              spread: 70,
+              origin: { y: 0.6 },
+            });
+          }
         }
-      }, 350);
+      };
+
+      animFrameRef.current = requestAnimationFrame(animateStep);
     }
   };
 
@@ -338,6 +408,7 @@ export const PlayTestView: React.FC<PlayTestViewProps> = ({
               height={boardHeight}
               viewBox={`0 0 ${boardWidth} ${boardHeight}`}
               className="max-w-full max-h-full block transition-transform select-none"
+              style={{ overflow: 'visible' }}
             >
               {/* Board Container */}
               <rect
@@ -401,13 +472,17 @@ export const PlayTestView: React.FC<PlayTestViewProps> = ({
               {/* Arrows */}
               {activeArrows.map((arr) => {
                 const isBlockedTap = arr.id === blockedTapId;
-                const isEscaping = arr.id === escapingArrowId;
+                const isEscaping = arr.id === escapingArrowAnim?.arrowId;
                 const isHinted = arr.id === hintArrowId;
+                const displayArrow =
+                  isEscaping && escapingArrowAnim
+                    ? { ...arr, points: escapingArrowAnim.currentPoints }
+                    : arr;
 
                 return (
                   <ArrowRenderer
                     key={arr.id}
-                    arrow={arr}
+                    arrow={displayArrow}
                     cellSize={cellSize}
                     padding={padding}
                     isBlockedTap={isBlockedTap}

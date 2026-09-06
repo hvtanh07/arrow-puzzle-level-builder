@@ -14,8 +14,11 @@ interface ArrowRendererProps {
   isEscaping?: boolean;
   isTargetForRemoval?: boolean;
   onClick?: (e: React.MouseEvent) => void;
+  onArrowMouseDown?: (e: React.MouseEvent) => void;
   onVertexDragStart?: (vertexIndex: number, e: React.MouseEvent) => void;
   showHandles?: boolean;
+  isDragging?: boolean;
+  interactive?: boolean;
 }
 
 export const ArrowRenderer: React.FC<ArrowRendererProps> = ({
@@ -29,8 +32,11 @@ export const ArrowRenderer: React.FC<ArrowRendererProps> = ({
   isEscaping = false,
   isTargetForRemoval = false,
   onClick,
+  onArrowMouseDown,
   onVertexDragStart,
   showHandles = false,
+  isDragging = false,
+  interactive = true,
 }) => {
   if (arrow.points.length < 2) return null;
 
@@ -72,16 +78,28 @@ export const ArrowRenderer: React.FC<ArrowRendererProps> = ({
   // Determine stroke color & effects
   const baseColor = getColorHex(arrow.color);
 
+  const cursorStyle = !interactive
+    ? 'default'
+    : isDragging
+    ? 'grabbing'
+    : onArrowMouseDown
+    ? 'grab'
+    : onClick
+    ? 'pointer'
+    : 'default';
+
   return (
     <g
-      className={`transition-transform duration-300 ${
+      className={`transition-transform ${isDragging || isEscaping ? '' : 'duration-300'} ${
         isBlockedTap ? 'animate-shake' : ''
-      } ${isEscaping ? 'transition-all duration-500 opacity-0 -translate-y-12' : ''}`}
+      } ${isEscaping || !interactive ? 'pointer-events-none' : ''}`}
       style={{
-        cursor: onClick ? 'pointer' : 'default',
+        cursor: cursorStyle,
         transformOrigin: `${headPoint.x}px ${headPoint.y}px`,
+        filter: isDragging ? 'drop-shadow(0 14px 24px rgba(0, 0, 0, 0.35))' : undefined,
       }}
-      onClick={onClick}
+      onClick={interactive && !isEscaping ? onClick : undefined}
+      onMouseDown={interactive && !isEscaping ? onArrowMouseDown : undefined}
     >
       {/* Outer Selection/Deadlock/Hint/Removal Glow */}
       {(isSelected || isDeadlocked || isHinted || isTargetForRemoval) && (
@@ -136,9 +154,10 @@ export const ArrowRenderer: React.FC<ArrowRendererProps> = ({
         strokeLinejoin="round"
       />
 
-      {/* Vertex Drag Handles (Builder mode only when selected) */}
+      {/* Vertex Drag Handles (Builder mode only when selected and not dragging) */}
       {showHandles &&
         isSelected &&
+        !isDragging &&
         pxPoints.map((pt, idx) => (
           <circle
             key={idx}

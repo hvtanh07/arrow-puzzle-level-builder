@@ -16,7 +16,7 @@ import {
   Compass,
 } from 'lucide-react';
 
-const STORAGE_KEY = 'arrow_puzzle_levels_v2';
+const STORAGE_KEY = 'arrow_puzzle_levels_v7';
 
 export const App: React.FC = () => {
   // Mode: 'builder' | 'playtest'
@@ -38,8 +38,8 @@ export const App: React.FC = () => {
     return PREMADE_LEVELS;
   });
 
-  // Active level ID (default to 'level-9' - the screenshot stage)
-  const [currentLevelId, setCurrentLevelId] = useState<string>('level-9');
+  // Active level ID (default to 'level-1' - The First Chain)
+  const [currentLevelId, setCurrentLevelId] = useState<string>('level-1');
 
   // Editor states (shared between Canvas and Right Inspector)
   const [tool, setTool] = useState<EditorTool>('draw');

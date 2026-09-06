@@ -18,6 +18,7 @@ Built with **React 19**, **TypeScript**, **Vite**, **Tailwind CSS**, and the **W
 9. [Canvas Coordinate System, Centering, Zoom & Pan](#9-canvas-coordinate-system-centering-zoom--pan)
 10. [Play Test Mode & Boosters (`src/components/PlayTestView.tsx`)](#10-play-test-mode--boosters)
 11. [Developer & AI Extension Guide](#11-developer--ai-extension-guide)
+12. [Premade Level Progression & Intentional Design Decisions](#12-premade-level-progression--intentional-design-decisions)
 
 ---
 
@@ -258,7 +259,7 @@ const cardHeight = gridHeight + boardMargin * 2;
 
 ### Zoom & Pan Implementation
 - **Zoom**: Wheel event updates `zoom` state between `0.3x` and `3.0x`.
-- **Pan**: Right-click mouse down starts drag, updating `pan: { x, y }`.
+- **Pan**: Right-click mouse down (when not drawing) starts drag, updating `pan: { x, y }`.
 - **Transformation**: Board card container applies `transform: translate(${pan.x}px, ${pan.y}px) scale(${zoom})` with `transformOrigin: 'center center'`.
 - **Screen-to-Grid Math**:
   ```typescript
@@ -269,14 +270,37 @@ const cardHeight = gridHeight + boardMargin * 2;
   const gy = Math.max(0, Math.min(gridSize.height - 1, Math.round((localY - padding) / cellSize)));
   ```
 
+### Tool Modes & Arrow Controls
+1. **Draw Mode (`tool === 'draw'`)**:
+   - **Head-First Drawing**: The starting left-click places the **Arrow Head**!
+   - **Adding Turn Points**: Subsequent left-clicks place body corners and turns.
+   - **Ending the Arrow**: **Right-click** immediately commits and ends the arrow.
+   - **Live Preview**: Displays an arrow head pointing outwards away from the incoming body segment with a pulsing head badge at the starting point.
+   - **Strict Separation**: Existing arrows have `pointer-events: none` in Draw mode so clicking to draw never accidentally selects or moves existing arrows.
+2. **Select Mode (`tool === 'select'`)**:
+   - **Single Click**: Selects the target arrow and highlights it. Clicking empty canvas deselects.
+   - **Drag-to-Move**: Left-click and drag any arrow to move it smoothly across the grid; release mouse to drop and place it in position.
+   - **Vertex Handles**: Drag individual corner handles to adjust arrow turns.
+   - **Drawing Disabled**: Drawing new arrows is blocked in Select mode.
+
 ---
 
 ## 10. Play Test Mode & Boosters (`src/components/PlayTestView.tsx`)
 
-Authentic casual mobile game UI featuring exactly **3 Boosters**:
-1. 💡 **Hint**: Locates a currently free arrow and pulses it in gold/emerald.
-2. ✂️ **Remove Any Arrow**: Activates target removal mode. Tapping any arrow removes it directly from the board.
-3. 🛣️ **Highlight Path**: Toggles visual escape trajectory rays for every arrow on the board in that arrow's specific color.
+Authentic casual mobile game UI featuring:
+- **Polyline Slither Exit Animation**:
+  - When an unblocked arrow is tapped, it performs a real-time, polyline-following exit animation (`requestAnimationFrame`).
+  - The **arrow head** moves straight ahead in its exit direction.
+  - The **arrow body** follows along the exact original arrow path, smoothly turning through all intermediate corners (like a train on tracks) before straightening out onto the exit trajectory off the board.
+  - Handled via geometry functions in `src/utils/geometry.ts`:
+    - `getExtendedTrack(points, exitDistance)`: Extends the polyline in the head's escape direction.
+    - `computePolylineLengths(track)`: Computes cumulative arc lengths along the polyline.
+    - `slicePolyline(track, cumLengths, sStart, sEnd)`: Slices the moving window $[s, s + L]$ of the arrow, preserving all intermediate corner vertices between tail and head.
+  - Overflows smoothly outside the game board (`style={{ overflow: 'visible' }}`).
+- **Exactly 3 Boosters**:
+  1. 💡 **Hint**: Locates a currently free arrow and pulses it in gold/emerald.
+  2. ✂️ **Remove Any Arrow**: Activates target removal mode. Tapping any arrow removes it directly from the board.
+  3. 🛣️ **Highlight Path**: Toggles visual escape trajectory rays for every arrow on the board in that arrow's specific color.
 - **Lives System**: 3 Hearts (❤️❤️❤️). Blocked arrows wobble, play bump sound, and deduct 1 life.
 - **Sound Engine (`sound.ts`)**: Procedural audio using `AudioContext` oscillators (whoosh, bump, pop, click, victory fanfare).
 
@@ -305,3 +329,31 @@ npx tsx scripts/test-all.ts
 ```bash
 npm run build
 ```
+
+---
+
+## 12. Premade Level Progression & Intentional Design Decisions
+
+Every premade level in `src/data/premadeLevels.ts` is crafted with an explicit pedagogical goal and puzzle dynamic according to the game's progression roadmap. No arrows are placed randomly. All levels are 100% verified solvable with zero resting overlaps.
+
+| Level | Name | Grid | Arrows | Difficulty | Branching Profile | Core Design Decision & Progression Concept |
+|---|---|---|---|---|---|---|
+| **1** | **The First Chain** | 6×6 | 3 | Tutorial | `[1, 1, 1]` | **Sequential Removal**: 3 arrows locked in a strict linear chain (`blue_hook -> red_pillar -> green_runner`). Blue L-hook exits right; Red vertical pillar unblocks up; Green horizontal runner unblocks right. Teaches that arrows are locked together and must be removed one by one. |
+| **2** | **The Winding Hook** | 7×7 | 4 | Easy | `[1, 1, 1, 1]` | **Long Hook Lock**: Features a long 2-turn hook arrow wrapping around a center dart and base dart. |
+| **3** | **The Serpentine Knot** | 7×7 | 5 | Easy+ | `[1, 1, 2, 2, 1]` | **Multi-Turn S-Serpent**: Long 3-turn serpentine arrow weaves across rows 1, 3 and cols 2, 4, caging peripheral pins. |
+| **4** | **The Double Winding** | 8×8 | 5 | Medium | `[1, 1, 2, 1, 1]` | **Interlocking Multi-Turn Bends**: An outer 2-turn hook and an inner 2-turn S-bend weave around each other. |
+| **5** | **The Coiled Labyrinth** | 8×8 | 6 | Medium | `[1, 1, 1, 1, 1, 1]` | **Double Serpentine Clasp**: Two large 3-turn serpents wrap around each other in a double labyrinth with 4 interlocked pins. |
+| **6** | **Tangled Noise** | 8×8 | 6 | Med-Hard | `[1, 1, 2, 2, 1, 1]` | **Winding Visual & Structural Noise**: 6 serpentine arrows (S-hooks, U-turns, zigzags, meanders) intertwined in a dense maze. |
+| **7** | **The Domino Spiral** | 8×8 | 7 | Satisfying | `[1, 1, 1, 1, 1, 1, 1]` | **Nested Hook Cascade**: An interlocking puzzle-box spiral of nested L-hooks and elbows where each arrow unblocks the next in a rhythmic chain reaction. |
+| **8** | **The Interwoven Comb** | 8×8 | 14 | Satisfying | `[1, 2, 3, 3, 3, 3, 3, 4, 4, 3, 2, 2, 1, 1]` | **Dual Vertical Spines & Teeth**: Evenly fills 78% of the 8×8 grid across all 8 rows and 8 columns with zero holes. Solves cleanly in 14 steps once the top key unlocks the spines. |
+| **9** | **The Gentle Breeze** | 6×6 | 8 | Easy (Breather) | `[4, 4, 3, 3, 2, 2, 1, 1]` | **Evenly Filled Breather**: 78% density across 6×6 with perimeter borders and filled center columns (2 & 3). Retains relaxing, straightforward escapes without large empty voids. |
+| **10** | **The Master Labyrinth** | 10×14 | 20 | Expert (Grand Finale) | `[8, 7, 7, 7, 7, 7, 7, 6, 6, 6, 6, 6, 5, 5, 4, 3, 2, 2, 1, 1]` | **The Masterpiece Finale**: Achieving 77% density (108/140 cells) across 10×14. Densely packed with 20 interlocking multi-turn arrows across all 8 colors with zero dead zones, zero resting overlaps, and a thrilling 20-step clearance cascade. |
+
+### Level 10 ("The Master Labyrinth") Deep Dive:
+- **Grid Size**: `10 × 14` (140 grid cells, evenly filled at 77% density with zero empty quadrants).
+- **Arrow Count**: 20 multi-turn serpentine arrows spanning all 8 colors (`0: Red`, `1: Blue`, `2: Green`, `3: Yellow`, `4: Pink`, `5: Orange`, `6: Brown`, `7: Cyan`).
+- **Arrow Geometry**: Every arrow features 2 to 4 turns (S-bends, U-turns, stair-steps, meanders, core snakes, and bridge hooks) that physically cup and interlock with adjacent curves.
+- **Solvability & Overlaps**: 100% verified solvable across 20 clearance steps with **0 resting overlaps**.
+
+
+

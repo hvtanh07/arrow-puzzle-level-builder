@@ -1,6 +1,8 @@
-import { Level } from '../types';
+import { solveLevel } from '../src/utils/solver';
+import { checkArrowOverlaps, analyzeArrowExit } from '../src/utils/geometry';
+import { Arrow, Level } from '../src/types';
 
-export const PREMADE_LEVELS: Level[] = [
+export const THE_10_LEVELS_V3: Level[] = [
   // =========================================================================
   // LEVEL 1: The First Chain (Grid 6x6)
   // Concept: 3 arrows locked to each other so player understands that each
@@ -11,9 +13,9 @@ export const PREMADE_LEVELS: Level[] = [
     name: 'Level 1: The First Chain',
     gridSize: { width: 6, height: 6 },
     arrows: [
-      { id: 'blue_hook', color: 1, points: [{ x: 1, y: 3 }, { x: 1, y: 1 }, { x: 4, y: 1 }] }, // Blue = 1: (1,3)->(1,1)->(4,1) RIGHT, clear exit
-      { id: 'red_pillar', color: 0, points: [{ x: 4, y: 5 }, { x: 4, y: 2 }] }, // Red = 0: (4,5)->(4,2) UP, blocked by blue_hook at (4,1)
-      { id: 'green_runner', color: 2, points: [{ x: 1, y: 4 }, { x: 3, y: 4 }] }, // Green = 2: (1,4)->(3,4) RIGHT, blocked by red_pillar at (4,4)
+      { id: 'lead', color: 1, points: [{ x: 2, y: 2 }, { x: 2, y: 0 }] }, // Blue = 1: UP, clear exit
+      { id: 'chaser', color: 2, points: [{ x: 2, y: 5 }, { x: 2, y: 3 }] }, // Green = 2: UP, blocked by lead
+      { id: 'flank', color: 5, points: [{ x: 5, y: 4 }, { x: 3, y: 4 }] }, // Orange = 5: LEFT, blocked by chaser
     ],
   },
 
@@ -142,76 +144,48 @@ export const PREMADE_LEVELS: Level[] = [
   },
 
   // =========================================================================
-  // =========================================================================
-  // LEVEL 8: The Interwoven Comb (Grid 8x8 - Evenly Filled 78% Density)
-  // Concept: Dense, evenly distributed comb architecture across all 8 rows and
-  // 8 columns. Dual vertical spines interlock with horizontal teeth and pillars.
+  // LEVEL 8: The Dual Zipper (Grid 8x8)
+  // Concept: Alternating zipper teeth that unravel in a deeply satisfying
+  // chain reaction once the top pull is cleared.
   // =========================================================================
   {
     id: 'level-8',
-    name: 'Level 8: The Interwoven Comb',
+    name: 'Level 8: The Dual Zipper',
     gridSize: { width: 8, height: 8 },
     arrows: [
-      // Top Key (Cyan = 7): (7,0) -> (0,0) [LEFT, clear exit off left edge]
-      { id: 'top_key', color: 7, points: [{ x: 7, y: 0 }, { x: 0, y: 0 }] },
-
-      // East Spine (Pink = 4): Col 5, (5,7) -> (5,1). Points UP, blocked by top_key at (5,0)
-      { id: 'spine_east', color: 4, points: [{ x: 5, y: 7 }, { x: 5, y: 1 }] },
-
-      // West Spine (Yellow = 3): Col 2, (2,7) -> (2,1). Points UP, blocked by top_key at (2,0)
-      { id: 'spine_west', color: 3, points: [{ x: 2, y: 7 }, { x: 2, y: 1 }] },
-
-      // Left Teeth in cols 0..1 (Rows 1, 3, 5) pointing RIGHT into spine_west:
-      { id: 'l_tooth_1', color: 2, points: [{ x: 0, y: 1 }, { x: 1, y: 1 }] },
-      { id: 'l_tooth_2', color: 4, points: [{ x: 0, y: 3 }, { x: 1, y: 3 }] },
-      { id: 'l_tooth_3', color: 1, points: [{ x: 0, y: 5 }, { x: 1, y: 5 }] },
-
-      // Right Teeth in cols 6..7 (Rows 2, 4, 6) pointing LEFT into spine_east:
-      { id: 'r_tooth_1', color: 0, points: [{ x: 7, y: 2 }, { x: 6, y: 2 }] },
-      { id: 'r_tooth_2', color: 5, points: [{ x: 7, y: 4 }, { x: 6, y: 4 }] },
-      { id: 'r_tooth_3', color: 6, points: [{ x: 7, y: 6 }, { x: 6, y: 6 }] },
-
-      // Center vertical pillars: Cols 3 and 4 pointing DOWN, blocked by bc_runner
-      { id: 'c_pillar_1', color: 1, points: [{ x: 3, y: 1 }, { x: 3, y: 5 }] },
-      { id: 'c_pillar_2', color: 2, points: [{ x: 4, y: 1 }, { x: 4, y: 5 }] },
-
-      // Bottom runners:
-      { id: 'bl_runner', color: 0, points: [{ x: 1, y: 7 }, { x: 0, y: 7 }] }, // LEFT off board
-      { id: 'bc_runner', color: 7, points: [{ x: 3, y: 7 }, { x: 4, y: 7 }] }, // RIGHT into spine_east
-      { id: 'br_runner', color: 6, points: [{ x: 6, y: 7 }, { x: 7, y: 7 }] }, // RIGHT off board
+      { id: 'pull', color: 7, points: [{ x: 4, y: 1 }, { x: 4, y: 0 }] }, // Cyan = 7: UP, clear exit
+      { id: 'l1', color: 1, points: [{ x: 1, y: 1 }, { x: 3, y: 1 }] }, // Blue = 1: RIGHT, blocked by pull
+      { id: 'r1', color: 2, points: [{ x: 3, y: 3 }, { x: 3, y: 2 }] }, // Green = 2: UP, blocked by l1
+      { id: 'l2', color: 3, points: [{ x: 1, y: 3 }, { x: 2, y: 3 }] }, // Yellow = 3: RIGHT, blocked by r1
+      { id: 'r2', color: 4, points: [{ x: 2, y: 5 }, { x: 2, y: 4 }] }, // Pink = 4: UP, blocked by l2
+      { id: 'l3', color: 5, points: [{ x: 0, y: 5 }, { x: 1, y: 5 }] }, // Orange = 5: RIGHT, blocked by r2
+      { id: 'r3', color: 6, points: [{ x: 1, y: 7 }, { x: 1, y: 6 }] }, // Brown = 6: UP, blocked by l3
+      { id: 'anchor', color: 0, points: [{ x: 0, y: 6 }, { x: 0, y: 7 }] }, // Red = 0: DOWN, clear exit
     ],
   },
 
   // =========================================================================
-  // LEVEL 9: The Gentle Breeze (Grid 6x6 - Evenly Filled 78% Density)
-  // Concept: An easy breather level before the finale, but evenly filled across
-  // all 6 rows and columns with no empty center hole.
+  // LEVEL 9: The Gentle Breeze (Grid 6x6)
+  // Concept: An easy, relaxing breather level before the final challenge.
+  // Clean open board with simple, satisfying unblocked escapes.
   // =========================================================================
   {
     id: 'level-9',
     name: 'Level 9: The Gentle Breeze',
     gridSize: { width: 6, height: 6 },
     arrows: [
-      // Top border: row 0
-      { id: 'top_left', color: 3, points: [{ x: 2, y: 0 }, { x: 0, y: 0 }] }, // Yellow = 3: LEFT, clear
-      { id: 'top_right', color: 5, points: [{ x: 3, y: 0 }, { x: 5, y: 0 }] }, // Orange = 5: RIGHT, clear
-      // Center columns 2 & 3: Filling the board core!
-      { id: 'center_up', color: 1, points: [{ x: 2, y: 4 }, { x: 2, y: 1 }] }, // Blue = 1: UP, blocked by top_left
-      { id: 'center_down', color: 2, points: [{ x: 3, y: 1 }, { x: 3, y: 4 }] }, // Green = 2: DOWN, blocked by bot_right
-      // West & East flanks:
-      { id: 'west_down', color: 4, points: [{ x: 1, y: 1 }, { x: 1, y: 4 }] }, // Pink = 4: DOWN, clear
-      { id: 'east_up', color: 7, points: [{ x: 4, y: 4 }, { x: 4, y: 1 }] }, // Cyan = 7: UP, clear
-      // Bottom border: row 5
-      { id: 'bot_left', color: 0, points: [{ x: 2, y: 5 }, { x: 0, y: 5 }] }, // Red = 0: LEFT, clear
-      { id: 'bot_right', color: 6, points: [{ x: 3, y: 5 }, { x: 5, y: 5 }] }, // Brown = 6: RIGHT, clear
+      { id: 'breeze_1', color: 1, points: [{ x: 1, y: 1 }, { x: 1, y: 4 }] }, // Blue = 1: DOWN, clear exit
+      { id: 'breeze_2', color: 2, points: [{ x: 4, y: 4 }, { x: 4, y: 1 }] }, // Green = 2: UP, clear exit
+      { id: 'breeze_3', color: 4, points: [{ x: 2, y: 5 }, { x: 5, y: 5 }] }, // Pink = 4: RIGHT, clear exit
+      { id: 'breeze_4', color: 3, points: [{ x: 3, y: 0 }, { x: 0, y: 0 }] }, // Yellow = 3: LEFT, clear exit
     ],
   },
 
   // =========================================================================
-  // LEVEL 10: The Master Labyrinth (Grid 10x14 - Evenly Packed 77% Density, 20 Arrows)
-  // Concept: The ultimate climax achieving full density and interlocking complexity.
-  // Spans 20 winding multi-turn arrows covering every row and column evenly,
-  // with zero resting overlaps and a thrilling 20-step escape chain.
+  // LEVEL 10: The Master Labyrinth (Grid 10x14 - 15 Multi-Turn Interlocking Arrows)
+  // Concept: Achieving at least 2/3 of the uploaded game screenshot!
+  // A sprawling 10x14 grid tightly packed with 15 multi-turn winding arrows
+  // (S-bends, U-turns, zigzags, stair-steps, and meanders) spanning all 8 colors.
   // =========================================================================
   {
     id: 'level-10',
@@ -232,34 +206,55 @@ export const PREMADE_LEVELS: Level[] = [
       { id: 'a05_east_u', color: 4, points: [{ x: 7, y: 4 }, { x: 9, y: 4 }, { x: 9, y: 3 }] },
       // 6. Center Bridge (Brown = 6, 2 turns): Points LEFT into (3,3) on a04_upper_stair
       { id: 'a06_mid_bridge', color: 6, points: [{ x: 5, y: 5 }, { x: 5, y: 3 }, { x: 4, y: 3 }] },
-      // 6b. North-Mid Filler Hook (Green = 2): Exits RIGHT at row 2 once a03 clears
-      { id: 'a06b_mid_hook', color: 2, points: [{ x: 6, y: 3 }, { x: 6, y: 2 }, { x: 7, y: 2 }] },
-      // 7. West Flank Snake (Red = 0, 3 turns): Points DOWN into col 2
+      // 7. West Flank Snake (Red = 0, 3 turns): Points DOWN into (2,13) on a13_bl_hook
       { id: 'a07_west_flank', color: 0, points: [{ x: 0, y: 8 }, { x: 0, y: 5 }, { x: 2, y: 5 }, { x: 2, y: 6 }] },
       // 8. Mid Horizontal Sweep (Blue = 1, 3 turns): Points RIGHT into (9,5) on a05_east_u
       { id: 'a08_mid_sweep', color: 1, points: [{ x: 1, y: 7 }, { x: 6, y: 7 }, { x: 6, y: 5 }, { x: 7, y: 5 }] },
       // 9. Central Cross (Green = 2, 2 turns): Points RIGHT into (6,6) on a08_mid_sweep
       { id: 'a09_cross', color: 2, points: [{ x: 3, y: 6 }, { x: 5, y: 6 }] },
-
-      // Core S-Snake (Red = 0, 4 turns): Fills rows 8-10, cols 2-5, exits DOWN
-      { id: 'a09b_core_snake', color: 0, points: [{ x: 2, y: 8 }, { x: 5, y: 8 }, { x: 5, y: 9 }, { x: 4, y: 9 }, { x: 4, y: 10 }] },
-      // Core L-Hook (Pink = 4, 3 turns): Fills rows 9-10, cols 1-3, exits LEFT
-      { id: 'a09c_core_hook', color: 4, points: [{ x: 3, y: 10 }, { x: 2, y: 10 }, { x: 2, y: 9 }, { x: 1, y: 9 }] },
-      // Core East Pin (Brown = 6): Fills col 6 rows 8-9, exits UP
-      { id: 'a09d_core_pin', color: 6, points: [{ x: 6, y: 9 }, { x: 6, y: 8 }] },
-
-      // 10. Lower Yellow Frame (Yellow = 3, 3 turns): (1, 10) -> (1, 12) -> (8, 12) -> (8, 10). Points UP
+      // 10. Lower Yellow Frame (Yellow = 3, 3 turns): Points UP into (8,2) on a03_ne_serpent
       { id: 'a10_yellow_frame', color: 3, points: [{ x: 1, y: 10 }, { x: 1, y: 12 }, { x: 8, y: 12 }, { x: 8, y: 10 }] },
-      // 11. Inner Cyan Hook (Cyan = 7): Points UP in col 6
-      { id: 'a11_inner_cyan', color: 7, points: [{ x: 3, y: 11 }, { x: 6, y: 11 }, { x: 6, y: 10 }] },
+      // 11. Inner Cyan Hook (Cyan = 7, 3 turns): Points LEFT into col 1 on a10_yellow_frame
+      { id: 'a11_inner_cyan', color: 7, points: [{ x: 3, y: 11 }, { x: 6, y: 11 }, { x: 6, y: 9 }, { x: 5, y: 9 }] },
       // 12. Deep Orange Snake (Orange = 5, 2 turns): Points RIGHT off board at row 8
       { id: 'a12_deep_snake', color: 5, points: [{ x: 7, y: 10 }, { x: 7, y: 8 }, { x: 9, y: 8 }] },
-      // 12b. East Edge Runner (Blue = 1): Fills col 9 at (9,9) -> (9,12)
-      { id: 'a12b_east_edge', color: 1, points: [{ x: 9, y: 9 }, { x: 9, y: 12 }] },
       // 13. Bottom-Left Hook (Pink = 4, 2 turns): Points RIGHT into (5,13) on a14_br_runner
       { id: 'a13_bl_hook', color: 4, points: [{ x: 0, y: 10 }, { x: 0, y: 13 }, { x: 3, y: 13 }] },
-      // 14. Bottom-Right Runner (Brown = 6): (5, 13) -> (8, 13). Points RIGHT off right edge
-      { id: 'a14_br_runner', color: 6, points: [{ x: 5, y: 13 }, { x: 8, y: 13 }] },
+      // 14. Bottom-Right Runner (Brown = 6): (5, 13) -> (9, 13). Points RIGHT, clear exit off right edge
+      { id: 'a14_br_runner', color: 6, points: [{ x: 5, y: 13 }, { x: 9, y: 13 }] },
     ],
   },
 ];
+
+console.log('=== VERIFYING ALL 10 LEVELS (VERSION 3) ===\n');
+let allOk = true;
+for (const lvl of THE_10_LEVELS_V3) {
+  const overlap = checkArrowOverlaps(lvl.arrows);
+  const sol = solveLevel(lvl.arrows, lvl.gridSize);
+  let remaining = [...lvl.arrows];
+  const branch: number[] = [];
+  while (remaining.length > 0) {
+    const free = remaining.filter(a => !analyzeArrowExit(a, remaining, lvl.gridSize).isBlocked);
+    branch.push(free.length);
+    if (free.length === 0) break;
+    remaining = remaining.filter(a => a.id !== free[0].id);
+  }
+
+  if (overlap.hasOverlaps || !sol.isSolvable) {
+    allOk = false;
+    console.error('? ' + lvl.name + ' FAILED:');
+    if (overlap.hasOverlaps) console.error('  Overlaps:', overlap.overlaps);
+    if (!sol.isSolvable) console.error('  Solvability:', sol.message);
+  } else {
+    console.log('? ' + lvl.name);
+    console.log('   Grid: ' + lvl.gridSize.width + 'x' + lvl.gridSize.height + ' | Arrows: ' + lvl.arrows.length + ' | Steps: ' + sol.stepOrder.length);
+    console.log('   Branching: [' + branch.join(', ') + ']');
+    console.log('   Order: ' + sol.stepOrder.join(' -> '));
+  }
+}
+
+if (allOk) {
+  console.log('\n?? ALL 10 LEVELS PASS WITH ZERO OVERLAPS AND 100% SOLVABILITY!');
+} else {
+  process.exit(1);
+}

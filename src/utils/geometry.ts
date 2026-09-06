@@ -172,3 +172,109 @@ export function checkArrowOverlaps(arrows: Arrow[]): {
     overlaps,
   };
 }
+
+/**
+ * Extends an arrow's polyline forward in the head's exit direction by exitDistance units.
+ */
+export function getExtendedTrack(points: Point[], exitDistance: number): Point[] {
+  if (points.length < 2) return points;
+  const head = points[points.length - 1];
+  const dir = getHeadDirection({ id: 'temp', color: 0, points });
+  const v = getDirectionVector(dir);
+
+  const exitHead: Point = {
+    x: head.x + v.x * exitDistance,
+    y: head.y + v.y * exitDistance,
+  };
+
+  return [...points, exitHead];
+}
+
+/**
+ * Computes cumulative polyline arc-lengths at each vertex of track.
+ */
+export function computePolylineLengths(track: Point[]): number[] {
+  const cumLengths: number[] = [0];
+  for (let i = 0; i < track.length - 1; i++) {
+    const p1 = track[i];
+    const p2 = track[i + 1];
+    const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+    cumLengths.push(cumLengths[cumLengths.length - 1] + dist);
+  }
+  return cumLengths;
+}
+
+/**
+ * Returns a point along the polyline track at arc-length dist.
+ */
+export function getPointAtDistance(track: Point[], cumLengths: number[], dist: number): Point {
+  const total = cumLengths[cumLengths.length - 1];
+  if (dist <= 0) return { ...track[0] };
+  if (dist >= total) return { ...track[track.length - 1] };
+
+  for (let i = 0; i < cumLengths.length - 1; i++) {
+    if (dist >= cumLengths[i] && dist <= cumLengths[i + 1]) {
+      const segLen = cumLengths[i + 1] - cumLengths[i];
+      if (segLen === 0) return { ...track[i] };
+      const u = (dist - cumLengths[i]) / segLen;
+      return {
+        x: track[i].x + u * (track[i + 1].x - track[i].x),
+        y: track[i].y + u * (track[i + 1].y - track[i].y),
+      };
+    }
+  }
+  return { ...track[track.length - 1] };
+}
+
+/**
+ * Slices the polyline track between arc-length sStart and sEnd,
+ * preserving all intermediate corner vertices so that the arrow body
+ * follows the exact geometry path as the head moves straight ahead.
+ */
+export function slicePolyline(
+  track: Point[],
+  cumLengths: number[],
+  sStart: number,
+  sEnd: number
+): Point[] {
+  const startPt = getPointAtDistance(track, cumLengths, sStart);
+  const endPt = getPointAtDistance(track, cumLengths, sEnd);
+
+  const raw: Point[] = [startPt];
+
+  // Include intermediate track vertices strictly between sStart and sEnd
+  for (let i = 1; i < track.length - 1; i++) {
+    const d = cumLengths[i];
+    if (d > sStart + 0.001 && d < sEnd - 0.001) {
+      raw.push({ ...track[i] });
+    }
+  }
+
+  // Ensure endPt is distinct from the last added point
+  const last = raw[raw.length - 1];
+  const dist = Math.hypot(endPt.x - last.x, endPt.y - last.y);
+  if (dist > 0.001) {
+    raw.push(endPt);
+  } else if (raw.length === 1) {
+    raw.push({ x: endPt.x + 0.01, y: endPt.y });
+  }
+
+  // Collinear cleaning
+  if (raw.length <= 2) return raw;
+  const cleaned: Point[] = [raw[0]];
+  for (let i = 1; i < raw.length - 1; i++) {
+    const prev = cleaned[cleaned.length - 1];
+    const cur = raw[i];
+    const next = raw[i + 1];
+
+    const isHoriz = Math.abs(prev.y - cur.y) < 0.001 && Math.abs(cur.y - next.y) < 0.001;
+    const isVert = Math.abs(prev.x - cur.x) < 0.001 && Math.abs(cur.x - next.x) < 0.001;
+
+    if (!isHoriz && !isVert) {
+      cleaned.push(cur);
+    }
+  }
+  cleaned.push(raw[raw.length - 1]);
+  return cleaned;
+}
+
