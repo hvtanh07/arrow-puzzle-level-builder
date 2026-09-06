@@ -5,9 +5,12 @@ import {
   analyzeArrowExit,
   getDirectionVector,
   getHeadDirection,
+  getReverseHeadDirection,
+  getEffectiveLayer,
   getExtendedTrack,
   computePolylineLengths,
   slicePolyline,
+  splitDoubleHeadedArrow,
 } from '../utils/geometry';
 import { getColorHex } from '../constants/colors';
 import { sound } from '../utils/sound';
@@ -44,10 +47,9 @@ export const PlayTestView: React.FC<PlayTestViewProps> = ({
   const [activeArrows, setActiveArrows] = useState<Arrow[]>([]);
   const [lives, setLives] = useState<number>(3);
   const [blockedTapId, setBlockedTapId] = useState<string | null>(null);
-  const [escapingArrowAnim, setEscapingArrowAnim] = useState<{
-    arrowId: string;
-    arrow: Arrow;
-    currentPoints: Point[];
+  const [escapingAnimState, setEscapingAnimState] = useState<{
+    animatingArrowIds: string[];
+    items: { id: string; arrow: Arrow; currentPoints: Point[] }[];
   } | null>(null);
   const [hintArrowId, setHintArrowId] = useState<string | null>(null);
   const [isWon, setIsWon] = useState<boolean>(false);
@@ -83,7 +85,7 @@ export const PlayTestView: React.FC<PlayTestViewProps> = ({
     setActiveArrows([...level.arrows]);
     setLives(3);
     setBlockedTapId(null);
-    setEscapingArrowAnim(null);
+    setEscapingAnimState(null);
     setHintArrowId(null);
     setIsWon(false);
     setIsGameOver(false);
@@ -93,7 +95,7 @@ export const PlayTestView: React.FC<PlayTestViewProps> = ({
   };
 
   const handleArrowTap = (arrowId: string) => {
-    if (isWon || isGameOver || escapingArrowAnim) return;
+    if (isWon || isGameOver || escapingAnimState) return;
 
     // Booster 2: If in "Remove Any Arrow" mode, remove tapped arrow directly!
     if (isRemovalMode) {
@@ -118,13 +120,34 @@ export const PlayTestView: React.FC<PlayTestViewProps> = ({
 
     setMovesCount((prev) => prev + 1);
 
-    // Analyze if unblocked
-    const analysis = analyzeArrowExit(arrow, activeArrows, level.gridSize);
+    // Element 2: Linked arrows group
+    const targetArrows = arrow.linkedGroupId
+      ? activeArrows.filter((a) => a.linkedGroupId === arrow.linkedGroupId)
+      : [arrow];
 
-    if (analysis.isBlocked) {
+    // Check if any arrow in target group is blocked
+    let blockedTarget: Arrow | null = null;
+    let pinningTopArrowId: string | null = null;
+
+    for (const target of targetArrows) {
+      const analysis = analyzeArrowExit(target, activeArrows, level.gridSize);
+      if (analysis.isBlocked) {
+        blockedTarget = target;
+        if (analysis.isBlockedByTopLayer && analysis.topPinArrowId) {
+          pinningTopArrowId = analysis.topPinArrowId;
+        }
+        break;
+      }
+    }
+
+    if (blockedTarget) {
       // BLOCKED!
       sound.playBump();
-      setBlockedTapId(arrowId);
+      setBlockedTapId(blockedTarget.id);
+      if (pinningTopArrowId) {
+        setHintArrowId(pinningTopArrowId); // Flash top arrow pinning it down!
+        setTimeout(() => setHintArrowId(null), 1200);
+      }
       setTimeout(() => setBlockedTapId(null), 400);
 
       const newLives = lives - 1;
@@ -134,73 +157,127 @@ export const PlayTestView: React.FC<PlayTestViewProps> = ({
         sound.playGameOver();
         setIsGameOver(true);
       }
-    } else {
-      // FREE! ESCAPE WITH SLITHER ANIMATION!
-      sound.playWhoosh();
-      setHintArrowId(null);
+      return;
+    }
 
-      // Compute extended polyline track and cumulative distances
-      const origPoints = arrow.points;
-      const exitDist = Math.max(level.gridSize.width, level.gridSize.height) + origPoints.length + 5;
-      const track = getExtendedTrack(origPoints, exitDist);
-      const cumLengths = computePolylineLengths(track);
-      const arrowLength = cumLengths[origPoints.length - 1];
-      const totalTrackDist = cumLengths[cumLengths.length - 1];
-      const totalTravel = totalTrackDist - arrowLength;
+    // ALL TARGET ARROWS UNBLOCKED! ESCAPE!
+    sound.playWhoosh();
+    setHintArrowId(null);
 
-      const durationMs = 420;
-      const startTime = performance.now();
+    const exitDist = Math.max(level.gridSize.width, level.gridSize.height) + 10;
+    interface EscapingComponent {
+      id: string;
+      arrow: Arrow;
+      track: Point[];
+      cumLengths: number[];
+      arrowLength: number;
+      totalTravel: number;
+    }
+    const components: EscapingComponent[] = [];
 
-      if (animFrameRef.current !== null) {
-        cancelAnimationFrame(animFrameRef.current);
-      }
+    for (const target of targetArrows) {
+      if (target.isDoubleHeaded) {
+        // Element 1: Two-headed arrow splits from midpoint!
+        const { forwardHalf, reverseHalf } = splitDoubleHeadedArrow(target);
 
-      const animateStep = (now: number) => {
-        const elapsed = now - startTime;
-        const progress = Math.min(elapsed / durationMs, 1);
-
-        // Smooth power curve: arrow accelerates cleanly along polyline
-        const easedProgress = Math.pow(progress, 1.4);
-        const currentDist = easedProgress * totalTravel;
-
-        const currentPoints = slicePolyline(
-          track,
-          cumLengths,
-          currentDist,
-          currentDist + arrowLength
-        );
-
-        setEscapingArrowAnim({
-          arrowId: arrow.id,
-          arrow,
-          currentPoints,
+        // Forward half component
+        const fwdTrack = getExtendedTrack(forwardHalf.points, exitDist);
+        const fwdLengths = computePolylineLengths(fwdTrack);
+        const fwdLen = fwdLengths[forwardHalf.points.length - 1];
+        components.push({
+          id: `${target.id}_fwd`,
+          arrow: forwardHalf,
+          track: fwdTrack,
+          cumLengths: fwdLengths,
+          arrowLength: fwdLen,
+          totalTravel: fwdLengths[fwdLengths.length - 1] - fwdLen,
         });
 
-        if (progress < 1) {
-          animFrameRef.current = requestAnimationFrame(animateStep);
-        } else {
-          // Animation complete!
-          animFrameRef.current = null;
-          setEscapingArrowAnim(null);
-
-          const remaining = activeArrows.filter((a) => a.id !== arrowId);
-          setActiveArrows(remaining);
-
-          // Check if won
-          if (remaining.length === 0) {
-            sound.playVictory();
-            setIsWon(true);
-            confetti({
-              particleCount: 120,
-              spread: 70,
-              origin: { y: 0.6 },
-            });
-          }
-        }
-      };
-
-      animFrameRef.current = requestAnimationFrame(animateStep);
+        // Reverse half component
+        const revTrack = getExtendedTrack(reverseHalf.points, exitDist);
+        const revLengths = computePolylineLengths(revTrack);
+        const revLen = revLengths[reverseHalf.points.length - 1];
+        components.push({
+          id: `${target.id}_rev`,
+          arrow: reverseHalf,
+          track: revTrack,
+          cumLengths: revLengths,
+          arrowLength: revLen,
+          totalTravel: revLengths[revLengths.length - 1] - revLen,
+        });
+      } else {
+        // Standard single-headed arrow
+        const track = getExtendedTrack(target.points, exitDist);
+        const cumLengths = computePolylineLengths(track);
+        const arrowLength = cumLengths[target.points.length - 1];
+        components.push({
+          id: target.id,
+          arrow: target,
+          track,
+          cumLengths,
+          arrowLength,
+          totalTravel: cumLengths[cumLengths.length - 1] - arrowLength,
+        });
+      }
     }
+
+    const durationMs = 420;
+    const startTime = performance.now();
+
+    if (animFrameRef.current !== null) {
+      cancelAnimationFrame(animFrameRef.current);
+    }
+
+    const animateStep = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / durationMs, 1);
+      const easedProgress = Math.pow(progress, 1.4);
+
+      const currentItems = components.map((comp) => {
+        const currentDist = easedProgress * comp.totalTravel;
+        const currentPoints = slicePolyline(
+          comp.track,
+          comp.cumLengths,
+          currentDist,
+          currentDist + comp.arrowLength
+        );
+        return {
+          id: comp.id,
+          arrow: comp.arrow,
+          currentPoints,
+        };
+      });
+
+      setEscapingAnimState({
+        animatingArrowIds: targetArrows.map((a) => a.id),
+        items: currentItems,
+      });
+
+      if (progress < 1) {
+        animFrameRef.current = requestAnimationFrame(animateStep);
+      } else {
+        // Animation complete!
+        animFrameRef.current = null;
+        setEscapingAnimState(null);
+
+        const targetIds = new Set(targetArrows.map((a) => a.id));
+        const remaining = activeArrows.filter((a) => !targetIds.has(a.id));
+        setActiveArrows(remaining);
+
+        // Check victory
+        if (remaining.length === 0) {
+          sound.playVictory();
+          setIsWon(true);
+          confetti({
+            particleCount: 120,
+            spread: 70,
+            origin: { y: 0.6 },
+          });
+        }
+      }
+    };
+
+    animFrameRef.current = requestAnimationFrame(animateStep);
   };
 
   // Booster 1: Hint
@@ -469,30 +546,66 @@ export const PlayTestView: React.FC<PlayTestViewProps> = ({
                   );
                 })}
 
-              {/* Arrows */}
-              {activeArrows.map((arr) => {
-                const isBlockedTap = arr.id === blockedTapId;
-                const isEscaping = arr.id === escapingArrowAnim?.arrowId;
-                const isHinted = arr.id === hintArrowId;
-                const displayArrow =
-                  isEscaping && escapingArrowAnim
-                    ? { ...arr, points: escapingArrowAnim.currentPoints }
-                    : arr;
-
-                return (
-                  <ArrowRenderer
-                    key={arr.id}
-                    arrow={displayArrow}
-                    cellSize={cellSize}
-                    padding={padding}
-                    isBlockedTap={isBlockedTap}
-                    isEscaping={isEscaping}
-                    isHinted={isHinted}
-                    isTargetForRemoval={isRemovalMode}
-                    onClick={() => handleArrowTap(arr.id)}
-                  />
-                );
+              {/* Element 2: Linked Arrows Visual Link Lines in PlayTest */}
+              {activeArrows.map((a1, idx) => {
+                if (!a1.linkedGroupId) return null;
+                const partners = activeArrows.slice(idx + 1).filter((a2) => a2.linkedGroupId === a1.linkedGroupId);
+                const mid1 = a1.points[Math.floor(a1.points.length / 2)];
+                return partners.map((a2) => {
+                  const mid2 = a2.points[Math.floor(a2.points.length / 2)];
+                  return (
+                    <g key={`link-${a1.id}-${a2.id}`} className="pointer-events-none">
+                      <line
+                        x1={padding + mid1.x * cellSize}
+                        y1={padding + mid1.y * cellSize}
+                        x2={padding + mid2.x * cellSize}
+                        y2={padding + mid2.y * cellSize}
+                        stroke="#38bdf8"
+                        strokeWidth={2}
+                        strokeDasharray="5 4"
+                        strokeOpacity={0.7}
+                      />
+                    </g>
+                  );
+                });
               })}
+
+              {/* Active Arrows (Sorted by Layer for Element 3) */}
+              {[...activeArrows]
+                .sort((a, b) => getEffectiveLayer(a, activeArrows) - getEffectiveLayer(b, activeArrows))
+                .filter((arr) => !escapingAnimState?.animatingArrowIds.includes(arr.id))
+                .map((arr) => {
+                  const isBlockedTap = arr.id === blockedTapId;
+                  const isHinted = arr.id === hintArrowId;
+
+                  return (
+                    <ArrowRenderer
+                      key={arr.id}
+                      arrow={arr}
+                      cellSize={cellSize}
+                      padding={padding}
+                      isBlockedTap={isBlockedTap}
+                      isEscaping={false}
+                      isHinted={isHinted}
+                      isTargetForRemoval={isRemovalMode}
+                      onClick={() => handleArrowTap(arr.id)}
+                    />
+                  );
+                })}
+
+              {/* Animating Escaping Components (Two-Headed Splits, Linked Arrows) */}
+              {escapingAnimState?.items.map((item) => (
+                <ArrowRenderer
+                  key={item.id}
+                  arrow={{ ...item.arrow, points: item.currentPoints }}
+                  cellSize={cellSize}
+                  padding={padding}
+                  isBlockedTap={false}
+                  isEscaping={true}
+                  isHinted={false}
+                  isTargetForRemoval={false}
+                />
+              ))}
             </svg>
           </div>
 

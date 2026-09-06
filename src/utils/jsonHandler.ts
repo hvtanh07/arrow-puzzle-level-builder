@@ -12,6 +12,9 @@ export interface ExportedLevel {
     id: string;
     color: number | string;
     points: { x: number; y: number }[];
+    isDoubleHeaded?: boolean;
+    linkedGroupId?: string;
+    layer?: number;
   }[];
 }
 
@@ -30,6 +33,9 @@ export function exportLevelToJson(level: Level): string {
       id: arrow.id,
       color: typeof arrow.color === 'number' ? arrow.color : getColorId(arrow.color),
       points: arrow.points.map((p) => ({ x: Math.round(p.x), y: Math.round(p.y) })),
+      ...(arrow.isDoubleHeaded ? { isDoubleHeaded: true } : {}),
+      ...(arrow.linkedGroupId ? { linkedGroupId: arrow.linkedGroupId } : {}),
+      ...(typeof arrow.layer === 'number' && arrow.layer !== 0 ? { layer: arrow.layer } : {}),
     })),
   };
 
@@ -51,6 +57,9 @@ export function exportAllLevelsToJson(levels: Level[]): string {
       id: arrow.id,
       color: typeof arrow.color === 'number' ? arrow.color : getColorId(arrow.color),
       points: arrow.points.map((p) => ({ x: Math.round(p.x), y: Math.round(p.y) })),
+      ...(arrow.isDoubleHeaded ? { isDoubleHeaded: true } : {}),
+      ...(arrow.linkedGroupId ? { linkedGroupId: arrow.linkedGroupId } : {}),
+      ...(typeof arrow.layer === 'number' && arrow.layer !== 0 ? { layer: arrow.layer } : {}),
     })),
   }));
 
@@ -170,10 +179,23 @@ function validateSingleLevel(
       points.push({ x: Math.round(x), y: Math.round(y) });
     }
 
+    const isDoubleHeaded = arrowObj.isDoubleHeaded === true ? true : undefined;
+    const linkedGroupId =
+      typeof arrowObj.linkedGroupId === 'string' && arrowObj.linkedGroupId.trim()
+        ? arrowObj.linkedGroupId.trim()
+        : undefined;
+    const layer =
+      typeof arrowObj.layer === 'number' && !isNaN(arrowObj.layer)
+        ? arrowObj.layer
+        : undefined;
+
     arrows.push({
       id: arrowId,
       color,
       points,
+      ...(isDoubleHeaded ? { isDoubleHeaded } : {}),
+      ...(linkedGroupId ? { linkedGroupId } : {}),
+      ...(typeof layer === 'number' ? { layer } : {}),
     });
   }
 

@@ -174,6 +174,71 @@ export const App: React.FC = () => {
     setSelectedArrowId(null);
   };
 
+  // Element 1: Toggle double-headed arrow
+  const handleToggleDoubleHeaded = () => {
+    if (!selectedArrow) return;
+    sound.playClick();
+    updateCurrentLevelArrows(
+      currentLevel.arrows.map((a) =>
+        a.id === selectedArrow.id ? { ...a, isDoubleHeaded: !a.isDoubleHeaded } : a
+      )
+    );
+  };
+
+  // Element 2: Link / Unlink arrow
+  const handleLinkArrow = (targetArrowId: string | null) => {
+    if (!selectedArrow) return;
+    sound.playClick();
+    if (!targetArrowId) {
+      updateCurrentLevelArrows(
+        currentLevel.arrows.map((a) =>
+          a.id === selectedArrow.id ? { ...a, linkedGroupId: undefined } : a
+        )
+      );
+      return;
+    }
+
+    const targetArrow = currentLevel.arrows.find((a) => a.id === targetArrowId);
+    if (!targetArrow) return;
+
+    const groupId = targetArrow.linkedGroupId || `link_${Date.now().toString(36).substr(-4)}`;
+
+    updateCurrentLevelArrows(
+      currentLevel.arrows.map((a) => {
+        if (a.id === selectedArrow.id || a.id === targetArrow.id) {
+          return { ...a, linkedGroupId: groupId };
+        }
+        return a;
+      })
+    );
+  };
+
+  // Element 3: Layer adjustments
+  const handleChangeLayer = (delta: number, isAbsolute: boolean = false) => {
+    if (!selectedArrow) return;
+    sound.playClick();
+    const curLayer = selectedArrow.layer ?? 0;
+    const newLayer = isAbsolute ? delta : Math.max(0, curLayer + delta);
+    updateCurrentLevelArrows(
+      currentLevel.arrows.map((a) =>
+        a.id === selectedArrow.id ? { ...a, layer: newLayer } : a
+      )
+    );
+  };
+
+  const handleBringToFront = () => {
+    if (!selectedArrow) return;
+    sound.playClick();
+    const maxLayer = Math.max(0, ...currentLevel.arrows.map((a) => a.layer ?? 0));
+    handleChangeLayer(maxLayer + 1, true);
+  };
+
+  const handleSendToBack = () => {
+    if (!selectedArrow) return;
+    sound.playClick();
+    handleChangeLayer(0, true);
+  };
+
   // Clear canvas
   const handleClearBoard = () => {
     if (currentLevel.arrows.length > 0 && confirm('Clear all arrows from this level?')) {
@@ -499,6 +564,12 @@ export const App: React.FC = () => {
           canRedo={historyIndex < history.length - 1}
           onClearBoard={handleClearBoard}
           arrowCount={currentLevel.arrows.length}
+          allArrows={currentLevel.arrows}
+          onToggleDoubleHeaded={handleToggleDoubleHeaded}
+          onLinkArrow={handleLinkArrow}
+          onChangeLayer={handleChangeLayer}
+          onBringToFront={handleBringToFront}
+          onSendToBack={handleSendToBack}
         />
       </div>
     </div>

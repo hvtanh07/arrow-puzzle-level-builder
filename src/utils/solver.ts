@@ -59,10 +59,19 @@ export function solveLevel(arrows: Arrow[], gridSize: GridSize): SolvabilityResu
       };
     }
 
-    // Pick the first free arrow to clear
+    // Pick the first free arrow to clear (clearing linked groups atomically)
     const chosen = freeArrows[0];
-    stepOrder.push(chosen.id);
-    remaining = remaining.filter((a) => a.id !== chosen.id);
+    if (chosen.linkedGroupId) {
+      const groupMembers = remaining.filter((a) => a.linkedGroupId === chosen.linkedGroupId);
+      for (const member of groupMembers) {
+        stepOrder.push(member.id);
+      }
+      const groupIds = new Set(groupMembers.map((a) => a.id));
+      remaining = remaining.filter((a) => !groupIds.has(a.id));
+    } else {
+      stepOrder.push(chosen.id);
+      remaining = remaining.filter((a) => a.id !== chosen.id);
+    }
   }
 
   // All cleared successfully!
@@ -74,7 +83,7 @@ export function solveLevel(arrows: Arrow[], gridSize: GridSize): SolvabilityResu
     deadlockedArrowIds: [],
     blockingGraph: initialBlockingGraph,
     message: overlapCheck.hasOverlaps
-      ? `Warning: Level clearance sequence found (${stepOrder.length} steps), but ${overlapCheck.overlaps.length} resting overlap(s) detected.`
+      ? `Warning: Clearance sequence found (${stepOrder.length} steps), but illegal co-planar collision(s) detected.`
       : `Solvable in ${stepOrder.length} steps! (${stepOrder.join(' → ')})`,
   };
 }

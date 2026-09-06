@@ -306,6 +306,36 @@ Authentic casual mobile game UI featuring:
 
 ---
 
+## 10.5. Advanced Logic Elements
+
+The level builder supports 3 distinct advanced puzzle mechanics:
+
+### Element 1: Two-Headed Arrows (`isDoubleHeaded: true`)
+- **Visuals**: Arrowheads render at **both** ends of the arrow (`points[0]` and `points[points.length - 1]`).
+- **Mechanics**:
+  - Both forward and reverse exit trajectories must be completely unblocked for the arrow to be removed.
+  - If either head is blocked, the arrow cannot escape.
+- **Detached Split Animation**:
+  - When tapped and unblocked, the arrow splits into two halves at its geometric midpoint.
+  - Both half-arrows slither outward simultaneously in their respective opposite directions off the board!
+
+### Element 2: Linked Arrows (`linkedGroupId: string`)
+- **Visuals**: Displays a cyan chain link badge 🔗 at the arrow midpoint, and a linking guide line connects linked partners on the canvas.
+- **Mechanics**:
+  - All arrows in a linked group move together.
+  - If ANY arrow in the group is blocked, none of them can escape.
+  - When all arrows in the group are unblocked, tapping either arrow causes all linked arrows to escape simultaneously in a coordinated multi-arrow slither!
+
+### Element 3: Layered Overlap Arrows (`layer: number`)
+- **Visuals**: Higher layer arrows render on top of lower layer arrows with depth drop-shadows and layer badges in builder mode.
+- **Mechanics**:
+  - Arrows can cross each other at discrete grid intersection points.
+  - An arrow with a higher effective layer sits on top of the arrow underneath it.
+  - **Removal Sequence**: The bottom arrow is physically locked/pinned by the top arrow and cannot escape until the top arrow is cleared.
+  - The live solver detects valid layered stacks and solves them in strict top-to-bottom clearance order!
+
+---
+
 ## 11. Developer & AI Extension Guide
 
 ### How to Add a New Booster to Play Test Mode

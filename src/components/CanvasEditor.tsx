@@ -1,7 +1,13 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Arrow, EditorTool, GridSize, Point, SolvabilityResult } from '../types';
 import { ArrowRenderer } from './ArrowRenderer';
-import { analyzeArrowExit, getDirectionVector, getHeadDirection } from '../utils/geometry';
+import {
+  analyzeArrowExit,
+  getDirectionVector,
+  getHeadDirection,
+  getReverseHeadDirection,
+  getEffectiveLayer,
+} from '../utils/geometry';
 import { getColorHex } from '../constants/colors';
 import { sound } from '../utils/sound';
 import { Check, X, ZoomIn, ZoomOut, Maximize2, Move } from 'lucide-react';
@@ -412,7 +418,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 
   // Precompute ray lines when showRays is enabled
   const arrowRays = showRays
-    ? arrows.map((arr) => {
+    ? arrows.flatMap((arr) => {
         const analysis = analyzeArrowExit(arr, arrows, gridSize);
         const head = arr.points[arr.points.length - 1];
         const dir = getHeadDirection(arr);
@@ -436,13 +442,52 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
           }
         }
 
-        return {
-          arrow: arr,
-          analysis,
-          color: getColorHex(arr.color),
-          start: head,
-          end: { x: endX, y: endY },
-        };
+        const rays = [
+          {
+            arrow: arr,
+            analysis,
+            color: getColorHex(arr.color),
+            start: head,
+            end: { x: endX, y: endY },
+            obstacle: analysis.firstObstacle,
+          },
+        ];
+
+        // Element 1: Also show reverse head exit ray for double-headed arrows
+        if (arr.isDoubleHeaded) {
+          const revHead = arr.points[0];
+          const revDir = getReverseHeadDirection(arr);
+          const rv = getDirectionVector(revDir);
+
+          let revEndX = revHead.x;
+          let revEndY = revHead.y;
+
+          if (analysis.firstObstacleReverse) {
+            revEndX = analysis.firstObstacleReverse.x;
+            revEndY = analysis.firstObstacleReverse.y;
+          } else {
+            while (
+              revEndX >= 0 &&
+              revEndX < gridSize.width &&
+              revEndY >= 0 &&
+              revEndY < gridSize.height
+            ) {
+              revEndX += rv.x;
+              revEndY += rv.y;
+            }
+          }
+
+          rays.push({
+            arrow: arr,
+            analysis,
+            color: getColorHex(arr.color),
+            start: revHead,
+            end: { x: revEndX, y: revEndY },
+            obstacle: analysis.firstObstacleReverse,
+          });
+        }
+
+        return rays;
       })
     : [];
 
@@ -694,45 +739,72 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
                 />
               ))}
 
-            {/* Arrows */}
-            {arrows.map((arr) => {
-              const isSelected = arr.id === selectedArrowId;
-              const isDeadlocked = solvability.deadlockedArrowIds.includes(arr.id);
-              const isDraggingThis = dragArrow?.arrowId === arr.id;
-
-              return (
-                <ArrowRenderer
-                  key={arr.id}
-                  arrow={arr}
-                  cellSize={cellSize}
-                  padding={padding}
-                  isSelected={isSelected}
-                  isDeadlocked={isDeadlocked}
-                  showHandles={tool === 'select'}
-                  isDragging={isDraggingThis}
-                  interactive={tool === 'select'}
-                  onClick={(e) => {
-                    if (tool === 'select') {
-                      e.stopPropagation();
-                      if (!dragArrow?.hasMoved) {
-                        sound.playClick();
-                        onSelectArrowId(arr.id);
-                      }
-                    }
-                  }}
-                  onArrowMouseDown={(e) => {
-                    if (tool === 'select') {
-                      handleArrowMouseDown(arr, e);
-                    }
-                  }}
-                  onVertexDragStart={(idx) => {
-                    if (tool === 'select') {
-                      setDragVertex({ arrowId: arr.id, vertexIndex: idx });
-                    }
-                  }}
-                />
-              );
+            {/* Element 2: Linked Arrows Visual Connection Lines */}
+            {arrows.map((a1, idx) => {
+              if (!a1.linkedGroupId) return null;
+              const partners = arrows.slice(idx + 1).filter((a2) => a2.linkedGroupId === a1.linkedGroupId);
+              const mid1 = a1.points[Math.floor(a1.points.length / 2)];
+              return partners.map((a2) => {
+                const mid2 = a2.points[Math.floor(a2.points.length / 2)];
+                const isEitherSelected = a1.id === selectedArrowId || a2.id === selectedArrowId;
+                return (
+                  <g key={`link-${a1.id}-${a2.id}`} className="pointer-events-none">
+                    <line
+                      x1={padding + mid1.x * cellSize}
+                      y1={padding + mid1.y * cellSize}
+                      x2={padding + mid2.x * cellSize}
+                      y2={padding + mid2.y * cellSize}
+                      stroke={isEitherSelected ? '#38bdf8' : '#94a3b8'}
+                      strokeWidth={isEitherSelected ? 3 : 2}
+                      strokeDasharray="6 4"
+                      strokeOpacity={isEitherSelected ? 0.9 : 0.45}
+                    />
+                  </g>
+                );
+              });
             })}
+
+            {/* Arrows (Sorted by Layer Order for Element 3) */}
+            {[...arrows]
+              .sort((a, b) => getEffectiveLayer(a, arrows) - getEffectiveLayer(b, arrows))
+              .map((arr) => {
+                const isSelected = arr.id === selectedArrowId;
+                const isDeadlocked = solvability.deadlockedArrowIds.includes(arr.id);
+                const isDraggingThis = dragArrow?.arrowId === arr.id;
+
+                return (
+                  <ArrowRenderer
+                    key={arr.id}
+                    arrow={arr}
+                    cellSize={cellSize}
+                    padding={padding}
+                    isSelected={isSelected}
+                    isDeadlocked={isDeadlocked}
+                    showHandles={tool === 'select'}
+                    isDragging={isDraggingThis}
+                    interactive={tool === 'select'}
+                    onClick={(e) => {
+                      if (tool === 'select') {
+                        e.stopPropagation();
+                        if (!dragArrow?.hasMoved) {
+                          sound.playClick();
+                          onSelectArrowId(arr.id);
+                        }
+                      }
+                    }}
+                    onArrowMouseDown={(e) => {
+                      if (tool === 'select') {
+                        handleArrowMouseDown(arr, e);
+                      }
+                    }}
+                    onVertexDragStart={(idx) => {
+                      if (tool === 'select') {
+                        setDragVertex({ arrowId: arr.id, vertexIndex: idx });
+                      }
+                    }}
+                  />
+                );
+              })}
 
             {/* Currently drawing preview arrow (Head-First!) */}
             {tool === 'draw' && previewArrowPoints && previewArrowPoints.length >= 2 && (

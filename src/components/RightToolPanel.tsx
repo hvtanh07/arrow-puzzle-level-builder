@@ -17,6 +17,10 @@ import {
   Palette,
   Wrench,
   Hash,
+  ArrowLeftRight,
+  Link2,
+  Unlink2,
+  Layers,
 } from 'lucide-react';
 
 interface RightToolPanelProps {
@@ -40,6 +44,12 @@ interface RightToolPanelProps {
   canRedo: boolean;
   onClearBoard: () => void;
   arrowCount: number;
+  allArrows: Arrow[];
+  onToggleDoubleHeaded: () => void;
+  onLinkArrow: (targetArrowId: string | null) => void;
+  onChangeLayer: (delta: number, isAbsolute?: boolean) => void;
+  onBringToFront: () => void;
+  onSendToBack: () => void;
 }
 
 export const RightToolPanel: React.FC<RightToolPanelProps> = ({
@@ -63,6 +73,12 @@ export const RightToolPanel: React.FC<RightToolPanelProps> = ({
   canRedo,
   onClearBoard,
   arrowCount,
+  allArrows,
+  onToggleDoubleHeaded,
+  onLinkArrow,
+  onChangeLayer,
+  onBringToFront,
+  onSendToBack,
 }) => {
   return (
     <aside className="w-72 sm:w-80 h-full bg-white border-l border-slate-200 flex flex-col shrink-0 z-20 shadow-xs select-none overflow-y-auto">
@@ -206,6 +222,113 @@ export const RightToolPanel: React.FC<RightToolPanelProps> = ({
                 <Trash2 className="w-3.5 h-3.5 text-rose-600" />
                 <span>Delete</span>
               </button>
+            </div>
+
+            {/* Element 1: Two-Headed Toggle */}
+            <div className="mt-2.5 pt-2 border-t border-amber-200/60">
+              <button
+                onClick={onToggleDoubleHeaded}
+                className={`w-full py-1.5 px-2.5 rounded-xl text-xs font-bold flex items-center justify-between transition-all ${
+                  selectedArrow.isDoubleHeaded
+                    ? 'bg-amber-600 text-white shadow-xs'
+                    : 'bg-white hover:bg-amber-100/70 text-amber-900 border border-amber-200'
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <ArrowLeftRight className="w-3.5 h-3.5" />
+                  <span>Two-Headed Arrow</span>
+                </div>
+                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-black/10">
+                  {selectedArrow.isDoubleHeaded ? 'ACTIVE' : 'OFF'}
+                </span>
+              </button>
+            </div>
+
+            {/* Element 2: Linked Arrows */}
+            <div className="mt-2.5 pt-2 border-t border-amber-200/60 space-y-1.5">
+              <div className="flex items-center justify-between text-[11px] font-bold text-amber-900">
+                <span className="flex items-center gap-1">
+                  <Link2 className="w-3.5 h-3.5 text-amber-700" />
+                  <span>Linked Arrows</span>
+                </span>
+                {selectedArrow.linkedGroupId ? (
+                  <button
+                    onClick={() => onLinkArrow(null)}
+                    className="text-[10px] text-rose-600 hover:underline flex items-center gap-0.5 font-bold"
+                  >
+                    <Unlink2 className="w-3 h-3" />
+                    Unlink
+                  </button>
+                ) : (
+                  <span className="text-[10px] text-amber-600/70 font-normal">Independent</span>
+                )}
+              </div>
+
+              <select
+                value={
+                  selectedArrow.linkedGroupId
+                    ? allArrows.find((a) => a.linkedGroupId === selectedArrow.linkedGroupId && a.id !== selectedArrow.id)?.id || ''
+                    : ''
+                }
+                onChange={(e) => onLinkArrow(e.target.value ? e.target.value : null)}
+                className="w-full text-xs font-semibold bg-white border border-amber-200 rounded-xl px-2 py-1.5 text-amber-900 outline-none focus:ring-1 focus:ring-amber-400"
+              >
+                <option value="">{selectedArrow.linkedGroupId ? 'Linked to Group' : 'Link with another arrow...'}</option>
+                {allArrows
+                  .filter((a) => a.id !== selectedArrow.id)
+                  .map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.id} ({COLOR_TYPES.find((c) => c.id === a.color)?.name || 'Arrow'})
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            {/* Element 3: Layer Order (Overlaps) */}
+            <div className="mt-2.5 pt-2 border-t border-amber-200/60">
+              <div className="flex items-center justify-between text-[11px] font-bold text-amber-900 mb-1.5">
+                <span className="flex items-center gap-1">
+                  <Layers className="w-3.5 h-3.5 text-amber-700" />
+                  <span>Layer (Overlaps)</span>
+                </span>
+                <span className="text-[10px] font-mono bg-amber-200/70 px-1.5 py-0.5 rounded text-amber-950 font-bold">
+                  Layer {selectedArrow.layer ?? 0}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-4 gap-1">
+                <button
+                  onClick={onBringToFront}
+                  className="py-1 px-1 text-[10px] font-bold bg-white hover:bg-amber-100 text-amber-900 rounded-lg border border-amber-200 text-center transition-colors"
+                  title="Bring to Front (Highest Layer)"
+                >
+                  Front
+                </button>
+                <button
+                  onClick={() => onChangeLayer(1)}
+                  className="py-1 px-1 text-[10px] font-bold bg-white hover:bg-amber-100 text-amber-900 rounded-lg border border-amber-200 text-center transition-colors"
+                  title="Layer Up"
+                >
+                  +1
+                </button>
+                <button
+                  onClick={() => onChangeLayer(-1)}
+                  className="py-1 px-1 text-[10px] font-bold bg-white hover:bg-amber-100 text-amber-900 rounded-lg border border-amber-200 text-center transition-colors"
+                  title="Layer Down"
+                >
+                  -1
+                </button>
+                <button
+                  onClick={onSendToBack}
+                  className="py-1 px-1 text-[10px] font-bold bg-white hover:bg-amber-100 text-amber-900 rounded-lg border border-amber-200 text-center transition-colors"
+                  title="Send to Back (Lowest Layer)"
+                >
+                  Back
+                </button>
+              </div>
+              <p className="text-[9px] text-amber-700/80 mt-1 leading-tight">
+                Top arrows must be cleared first before bottom arrows are unlocked.
+              </p>
             </div>
           </div>
         )}
