@@ -62,6 +62,9 @@ interface RightToolPanelProps {
   referenceLevelId?: string;
   onSelectReferenceLevelId?: (id: string) => void;
   styleProfile?: StyleProfile | null;
+  linkingSourceArrowId?: string | null;
+  onStartLinking?: (sourceArrowId: string) => void;
+  onCancelLinking?: () => void;
 }
 
 export const RightToolPanel: React.FC<RightToolPanelProps> = ({
@@ -102,6 +105,9 @@ export const RightToolPanel: React.FC<RightToolPanelProps> = ({
   referenceLevelId,
   onSelectReferenceLevelId,
   styleProfile,
+  linkingSourceArrowId,
+  onStartLinking,
+  onCancelLinking,
 }) => {
   const effectiveAreas = prebuildAreas || (prebuildArea ? [prebuildArea] : []);
   const totalAreaCells = effectiveAreas.reduce(
@@ -463,7 +469,7 @@ export const RightToolPanel: React.FC<RightToolPanelProps> = ({
             </div>
 
             {/* Element 2: Linked Arrows */}
-            <div className="mt-2.5 pt-2 border-t border-amber-200/60 space-y-1.5">
+            <div className="mt-2.5 pt-2 border-t border-amber-200/60 space-y-2">
               <div className="flex items-center justify-between text-[11px] font-bold text-amber-900">
                 <span className="flex items-center gap-1">
                   <Link2 className="w-3.5 h-3.5 text-amber-700" />
@@ -472,7 +478,8 @@ export const RightToolPanel: React.FC<RightToolPanelProps> = ({
                 {selectedArrow.linkedGroupId ? (
                   <button
                     onClick={() => onLinkArrow(null)}
-                    className="text-[10px] text-rose-600 hover:underline flex items-center gap-0.5 font-bold"
+                    className="text-[10px] text-rose-600 hover:text-rose-700 hover:underline flex items-center gap-0.5 font-bold cursor-pointer"
+                    title="Unlink this arrow"
                   >
                     <Unlink2 className="w-3 h-3" />
                     Unlink
@@ -482,24 +489,72 @@ export const RightToolPanel: React.FC<RightToolPanelProps> = ({
                 )}
               </div>
 
-              <select
-                value={
-                  selectedArrow.linkedGroupId
-                    ? allArrows.find((a) => a.linkedGroupId === selectedArrow.linkedGroupId && a.id !== selectedArrow.id)?.id || ''
-                    : ''
-                }
-                onChange={(e) => onLinkArrow(e.target.value ? e.target.value : null)}
-                className="w-full text-xs font-semibold bg-white border border-amber-200 rounded-xl px-2 py-1.5 text-amber-900 outline-none focus:ring-1 focus:ring-amber-400"
-              >
-                <option value="">{selectedArrow.linkedGroupId ? 'Linked to Group' : 'Link with another arrow...'}</option>
-                {allArrows
-                  .filter((a) => a.id !== selectedArrow.id)
-                  .map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.id} ({COLOR_TYPES.find((c) => c.id === a.color)?.name || 'Arrow'})
-                    </option>
-                  ))}
-              </select>
+              {linkingSourceArrowId === selectedArrow.id ? (
+                <div className="p-2.5 bg-amber-100/90 border border-amber-400/80 rounded-xl space-y-2 animate-pulse">
+                  <div className="flex items-center justify-between text-xs font-bold text-amber-950">
+                    <span className="flex items-center gap-1.5">
+                      <Link2 className="w-4 h-4 text-amber-700 animate-spin" />
+                      <span>Pick Target Arrow...</span>
+                    </span>
+                    <button
+                      onClick={onCancelLinking}
+                      className="text-[10px] font-bold text-slate-700 bg-white hover:bg-slate-100 px-2 py-0.5 rounded-lg border border-amber-300 cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-amber-900">
+                    Click any arrow on canvas to link it with this arrow (or press Esc to cancel).
+                  </p>
+                </div>
+              ) : selectedArrow.linkedGroupId ? (
+                <div className="space-y-1.5">
+                  <div className="text-[10px] text-amber-800 font-semibold">Linked with:</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {allArrows
+                      .filter((a) => a.linkedGroupId === selectedArrow.linkedGroupId && a.id !== selectedArrow.id)
+                      .map((partner) => {
+                        const pColor = COLOR_TYPES.find((c) => c.id === partner.color)?.name || 'Arrow';
+                        return (
+                          <span
+                            key={partner.id}
+                            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-mono font-bold bg-white border border-amber-300 text-amber-950 shadow-xs"
+                          >
+                            <span
+                              className="w-2.5 h-2.5 rounded-full shrink-0"
+                              style={{ backgroundColor: getColorHex(partner.color) }}
+                            />
+                            <span>{partner.id}</span>
+                            <span className="text-[10px] text-slate-500 font-normal">({pColor})</span>
+                          </span>
+                        );
+                      })}
+                  </div>
+                  <div className="flex items-center gap-1.5 pt-1">
+                    <button
+                      onClick={() => onStartLinking?.(selectedArrow.id)}
+                      className="flex-1 py-1.5 px-2 bg-white hover:bg-amber-50 active:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 cursor-pointer transition-all"
+                      title="Link with additional arrow"
+                    >
+                      <Link2 className="w-3.5 h-3.5 text-amber-700" />
+                      <span>Link another arrow...</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <button
+                    onClick={() => onStartLinking?.(selectedArrow.id)}
+                    className="w-full py-2 px-3 bg-white hover:bg-amber-50 active:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  >
+                    <Link2 className="w-4 h-4 text-amber-600" />
+                    <span>Select Arrow to Link...</span>
+                  </button>
+                  <p className="text-[10px] text-amber-700/80 text-center font-medium">
+                    Click button then pick any arrow on canvas
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Element 3: Layer Order (Overlaps) */}

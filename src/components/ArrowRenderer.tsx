@@ -13,6 +13,8 @@ interface ArrowRendererProps {
   isBlockedTap?: boolean;
   isEscaping?: boolean;
   isTargetForRemoval?: boolean;
+  isLinkSource?: boolean;
+  isLinkCandidate?: boolean;
   onClick?: (e: React.MouseEvent) => void;
   onArrowMouseDown?: (e: React.MouseEvent) => void;
   onMoveHandleMouseDown?: (e: React.MouseEvent) => void;
@@ -33,6 +35,8 @@ export const ArrowRenderer: React.FC<ArrowRendererProps> = ({
   isBlockedTap = false,
   isEscaping = false,
   isTargetForRemoval = false,
+  isLinkSource = false,
+  isLinkCandidate = false,
   onClick,
   onArrowMouseDown,
   onMoveHandleMouseDown,
@@ -133,6 +137,8 @@ export const ArrowRenderer: React.FC<ArrowRendererProps> = ({
 
   const cursorStyle = !interactive
     ? 'default'
+    : isLinkCandidate
+    ? 'pointer'
     : isDragging
     ? 'grabbing'
     : isSelected
@@ -140,6 +146,18 @@ export const ArrowRenderer: React.FC<ArrowRendererProps> = ({
     : onClick
     ? 'pointer'
     : 'default';
+
+  const glowColor = isDeadlocked
+    ? '#ef4444'
+    : isTargetForRemoval
+    ? '#f43f5e'
+    : isLinkCandidate
+    ? '#06b6d4'
+    : isLinkSource
+    ? '#f59e0b'
+    : isHinted
+    ? '#eab308'
+    : '#3b82f6';
 
   return (
     <g
@@ -154,29 +172,30 @@ export const ArrowRenderer: React.FC<ArrowRendererProps> = ({
       onClick={interactive && !isEscaping ? onClick : undefined}
       onMouseDown={interactive && !isEscaping ? onArrowMouseDown : undefined}
     >
-      {/* Outer Selection/Deadlock/Hint/Removal Glow */}
-      {(isSelected || isDeadlocked || isHinted || isTargetForRemoval) && (
+      {/* Outer Selection/Deadlock/Hint/Removal/Linking Glow */}
+      {(isSelected || isDeadlocked || isHinted || isTargetForRemoval || isLinkSource || isLinkCandidate) && (
         <>
           <path
             d={pathD}
             fill="none"
-            stroke={isDeadlocked ? '#ef4444' : isTargetForRemoval ? '#f43f5e' : isHinted ? '#eab308' : '#3b82f6'}
-            strokeWidth={strokeWidth + 10}
+            stroke={glowColor}
+            strokeWidth={strokeWidth + (isLinkCandidate ? 8 : 10)}
+            strokeDasharray={isLinkCandidate ? '6 4' : undefined}
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeOpacity={0.45}
-            className={isHinted || isTargetForRemoval ? 'animate-pulse' : ''}
+            strokeOpacity={isLinkCandidate ? 0.75 : 0.45}
+            className={isHinted || isTargetForRemoval || isLinkCandidate || isLinkSource ? 'animate-pulse' : ''}
           />
           <path
             d={arrowheadD}
-            fill={isDeadlocked ? '#ef4444' : isTargetForRemoval ? '#f43f5e' : isHinted ? '#eab308' : '#3b82f6'}
-            fillOpacity={0.45}
+            fill={glowColor}
+            fillOpacity={isLinkCandidate ? 0.75 : 0.45}
           />
           {arrow.isDoubleHeaded && revArrowheadD && (
             <path
               d={revArrowheadD}
-              fill={isDeadlocked ? '#ef4444' : isTargetForRemoval ? '#f43f5e' : isHinted ? '#eab308' : '#3b82f6'}
-              fillOpacity={0.45}
+              fill={glowColor}
+              fillOpacity={isLinkCandidate ? 0.75 : 0.45}
             />
           )}
         </>

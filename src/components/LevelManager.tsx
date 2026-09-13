@@ -19,7 +19,14 @@ import {
   AlertTriangle,
   FileCode,
   FolderDown,
+  Folder,
+  FolderCheck,
 } from 'lucide-react';
+import {
+  saveJsonWithDirectoryPrompt,
+  pickDirectory,
+  isDirectoryPickerSupported,
+} from '../utils/fileExport';
 
 interface LevelManagerProps {
   isOpen: boolean;
@@ -57,6 +64,10 @@ export const LevelManager: React.FC<LevelManagerProps> = ({
   // Export Modal state
   const [exportJson, setExportJson] = useState<string | null>(null);
   const [exportTitle, setExportTitle] = useState<string>('');
+  const [exportFileName, setExportFileName] = useState<string>('level.json');
+  const [targetDirectoryHandle, setTargetDirectoryHandle] = useState<any | null>(null);
+  const [targetDirectoryName, setTargetDirectoryName] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
 
   // Import Modal state
@@ -73,15 +84,20 @@ export const LevelManager: React.FC<LevelManagerProps> = ({
   const handleExportSingle = (level: Level) => {
     sound.playClick();
     const json = exportLevelToJson(level);
+    const clean = level.name.toLowerCase().replace(/[^a-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '');
     setExportTitle(`Export: ${level.name}`);
+    setExportFileName(`${clean || 'level'}.json`);
     setExportJson(json);
+    setSaveStatus(null);
   };
 
   const handleExportAll = () => {
     sound.playClick();
     const json = exportAllLevelsToJson(levels);
     setExportTitle(`Export All Levels (${levels.length} levels)`);
+    setExportFileName('arrow_levels_pack.json');
     setExportJson(json);
+    setSaveStatus(null);
   };
 
   const handleCopyExport = () => {
@@ -92,16 +108,42 @@ export const LevelManager: React.FC<LevelManagerProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDownloadExport = () => {
+  const handlePickDirectory = async () => {
+    sound.playClick();
+    try {
+      const res = await pickDirectory();
+      if (res) {
+        setTargetDirectoryHandle(res.handle);
+        setTargetDirectoryName(res.name);
+        sound.playClick();
+      }
+    } catch (err) {
+      console.warn('Directory picking cancelled or error', err);
+    }
+  };
+
+  const handleDownloadExport = async () => {
     if (!exportJson) return;
     sound.playClick();
-    const blob = new Blob([exportJson], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = exportTitle.includes('All') ? 'arrow_levels_pack.json' : 'level.json';
-    a.click();
-    URL.revokeObjectURL(url);
+
+    const filename =
+      exportFileName.trim() ||
+      (exportTitle.includes('All') ? 'arrow_levels_pack.json' : 'level.json');
+
+    const result = await saveJsonWithDirectoryPrompt({
+      suggestedName: filename,
+      content: exportJson,
+      directoryHandle: targetDirectoryHandle,
+    });
+
+    if (result.success) {
+      sound.playClick();
+      const msg = result.directoryName
+        ? `Saved to "${result.directoryName}" as ${result.savedName || filename}`
+        : `Saved as ${result.savedName || filename}`;
+      setSaveStatus(msg);
+      setTimeout(() => setSaveStatus(null), 4000);
+    }
   };
 
   const handleDoImport = () => {
@@ -391,14 +433,61 @@ export const LevelManager: React.FC<LevelManagerProps> = ({
             <textarea
               readOnly
               value={exportJson}
-              rows={12}
+              rows={9}
               className="w-full font-mono text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-700 outline-none focus:ring-1 focus:ring-blue-500"
             />
+
+            {/* File Name & Download Directory Options */}
+            <div className="mt-3 space-y-2.5 bg-slate-50 border border-slate-200/80 rounded-2xl p-3">
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-bold text-slate-700 w-18 shrink-0">File Name:</label>
+                <input
+                  type="text"
+                  value={exportFileName}
+                  onChange={(e) => setExportFileName(e.target.value)}
+                  className="flex-1 font-mono text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 outline-none focus:ring-1 focus:ring-blue-500"
+                  placeholder="level.json"
+                />
+              </div>
+
+              <div className="flex items-center justify-between text-xs pt-1.5 border-t border-slate-200/60">
+                <div className="flex items-center gap-1.5 text-slate-600">
+                  {targetDirectoryName ? (
+                    <FolderCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                  ) : (
+                    <Folder className="w-4 h-4 text-amber-500 shrink-0" />
+                  )}
+                  <span className="text-[11px]">
+                    {targetDirectoryName ? (
+                      <span>Folder: <b className="text-slate-800 font-semibold">{targetDirectoryName}</b></span>
+                    ) : (
+                      <span>Folder: <b>Select on download (Save As dialog)</b></span>
+                    )}
+                  </span>
+                </div>
+                {isDirectoryPickerSupported() && (
+                  <button
+                    onClick={handlePickDirectory}
+                    className="text-[11px] font-bold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer flex items-center gap-1 ml-2 shrink-0"
+                  >
+                    <FolderDown className="w-3.5 h-3.5" />
+                    <span>{targetDirectoryName ? 'Change Folder' : 'Choose Directory'}</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {saveStatus && (
+              <div className="mt-2 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-1.5 flex items-center gap-1.5 animate-in fade-in duration-150">
+                <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span className="truncate">{saveStatus}</span>
+              </div>
+            )}
 
             <div className="flex items-center justify-end gap-2 mt-4">
               <button
                 onClick={handleCopyExport}
-                className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all"
+                className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer"
               >
                 {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
                 <span>{copied ? 'Copied!' : 'Copy JSON'}</span>
@@ -406,7 +495,8 @@ export const LevelManager: React.FC<LevelManagerProps> = ({
 
               <button
                 onClick={handleDownloadExport}
-                className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all"
+                className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer"
+                title="Choose directory and download .json"
               >
                 <Download className="w-4 h-4" />
                 <span>Download .json</span>

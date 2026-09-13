@@ -65,6 +65,9 @@ export const App: React.FC = () => {
   const [prebuildAreas, setPrebuildAreas] = useState<SelectionArea[]>([]);
   const [referenceLevelId, setReferenceLevelId] = useState<string>('');
 
+  // Interactive Arrow Linking Mode (Element 2)
+  const [linkingSourceArrowId, setLinkingSourceArrowId] = useState<string | null>(null);
+
   // Sound state
   const [soundEnabled, setSoundEnabled] = useState(true);
 
@@ -96,7 +99,12 @@ export const App: React.FC = () => {
       setReferenceLevelId(levels[0]?.id || '');
     }
     setPrebuildAreas([]);
+    setLinkingSourceArrowId(null);
   }, [currentLevelId, levels]);
+
+  useEffect(() => {
+    setLinkingSourceArrowId(null);
+  }, [mode]);
 
   // Reference level object used for style analysis
   const referenceLevel = useMemo(() => {
@@ -256,8 +264,26 @@ export const App: React.FC = () => {
   const handleDeleteArrow = () => {
     if (!selectedArrowId) return;
     sound.playClick();
+    const toDelete = currentLevel.arrows.find((a) => a.id === selectedArrowId);
+    if (toDelete?.linkedGroupId) {
+      const oldGroupId = toDelete.linkedGroupId;
+      const remaining = currentLevel.arrows.filter(
+        (a) => a.id !== selectedArrowId && a.linkedGroupId === oldGroupId
+      );
+      if (remaining.length <= 1) {
+        updateCurrentLevelArrows(
+          currentLevel.arrows
+            .filter((a) => a.id !== selectedArrowId)
+            .map((a) => (a.linkedGroupId === oldGroupId ? { ...a, linkedGroupId: undefined } : a))
+        );
+        setSelectedArrowId(null);
+        setLinkingSourceArrowId(null);
+        return;
+      }
+    }
     updateCurrentLevelArrows(currentLevel.arrows.filter((a) => a.id !== selectedArrowId));
     setSelectedArrowId(null);
+    setLinkingSourceArrowId(null);
   };
 
   // Element 1: Toggle double-headed arrow
@@ -271,23 +297,82 @@ export const App: React.FC = () => {
     );
   };
 
-  // Element 2: Link / Unlink arrow
+  // Element 2: Interactive Arrow Linking Handlers
+  const handleStartLinking = (sourceArrowId: string) => {
+    sound.playClick();
+    setTool('select');
+    setLinkingSourceArrowId(sourceArrowId);
+    setSelectedArrowId(sourceArrowId);
+  };
+
+  const handleCancelLinking = () => {
+    sound.playClick();
+    setLinkingSourceArrowId(null);
+  };
+
+  const handleCompleteLinking = (targetArrowId: string) => {
+    if (!linkingSourceArrowId || linkingSourceArrowId === targetArrowId) return;
+    sound.playClick();
+
+    const sourceArrow = currentLevel.arrows.find((a) => a.id === linkingSourceArrowId);
+    const targetArrow = currentLevel.arrows.find((a) => a.id === targetArrowId);
+    if (!sourceArrow || !targetArrow) {
+      setLinkingSourceArrowId(null);
+      return;
+    }
+
+    const groupId =
+      targetArrow.linkedGroupId ||
+      sourceArrow.linkedGroupId ||
+      `link_${Date.now().toString(36).substr(-4)}`;
+
+    updateCurrentLevelArrows(
+      currentLevel.arrows.map((a) => {
+        if (a.id === sourceArrow.id || a.id === targetArrow.id) {
+          return { ...a, linkedGroupId: groupId };
+        }
+        return a;
+      })
+    );
+    setLinkingSourceArrowId(null);
+  };
+
+  // Direct Link / Unlink arrow
   const handleLinkArrow = (targetArrowId: string | null) => {
     if (!selectedArrow) return;
     sound.playClick();
     if (!targetArrowId) {
+      const oldGroupId = selectedArrow.linkedGroupId;
+      if (oldGroupId) {
+        const remaining = currentLevel.arrows.filter(
+          (a) => a.linkedGroupId === oldGroupId && a.id !== selectedArrow.id
+        );
+        if (remaining.length <= 1) {
+          updateCurrentLevelArrows(
+            currentLevel.arrows.map((a) =>
+              a.linkedGroupId === oldGroupId ? { ...a, linkedGroupId: undefined } : a
+            )
+          );
+          setLinkingSourceArrowId(null);
+          return;
+        }
+      }
       updateCurrentLevelArrows(
         currentLevel.arrows.map((a) =>
           a.id === selectedArrow.id ? { ...a, linkedGroupId: undefined } : a
         )
       );
+      setLinkingSourceArrowId(null);
       return;
     }
 
     const targetArrow = currentLevel.arrows.find((a) => a.id === targetArrowId);
     if (!targetArrow) return;
 
-    const groupId = targetArrow.linkedGroupId || `link_${Date.now().toString(36).substr(-4)}`;
+    const groupId =
+      targetArrow.linkedGroupId ||
+      selectedArrow.linkedGroupId ||
+      `link_${Date.now().toString(36).substr(-4)}`;
 
     updateCurrentLevelArrows(
       currentLevel.arrows.map((a) => {
@@ -297,6 +382,7 @@ export const App: React.FC = () => {
         return a;
       })
     );
+    setLinkingSourceArrowId(null);
   };
 
   // Element 3: Layer adjustments
@@ -624,6 +710,9 @@ export const App: React.FC = () => {
               onClearPrebuildAreas={handleClearPrebuildAreas}
               onTriggerPrebuild={handleTriggerPrebuild}
               sourceLevelName={referenceLevel?.name}
+              linkingSourceArrowId={linkingSourceArrowId}
+              onCompleteLinking={handleCompleteLinking}
+              onCancelLinking={handleCancelLinking}
             />
           ) : (
             <PlayTestView
@@ -672,6 +761,9 @@ export const App: React.FC = () => {
           referenceLevelId={referenceLevelId}
           onSelectReferenceLevelId={setReferenceLevelId}
           styleProfile={styleProfile}
+          linkingSourceArrowId={linkingSourceArrowId}
+          onStartLinking={handleStartLinking}
+          onCancelLinking={handleCancelLinking}
         />
       </div>
     </div>

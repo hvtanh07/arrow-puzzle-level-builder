@@ -11,7 +11,7 @@ import {
 } from '../utils/geometry';
 import { getColorHex } from '../constants/colors';
 import { sound } from '../utils/sound';
-import { Check, X, ZoomIn, ZoomOut, Maximize2, Move, Sparkles } from 'lucide-react';
+import { Check, X, ZoomIn, ZoomOut, Maximize2, Move, Sparkles, Link2 } from 'lucide-react';
 
 interface CanvasEditorProps {
   gridSize: GridSize;
@@ -33,6 +33,9 @@ interface CanvasEditorProps {
   onSelectPrebuildArea?: (area: SelectionArea | null) => void;
   onTriggerPrebuild?: () => void;
   sourceLevelName?: string;
+  linkingSourceArrowId?: string | null;
+  onCompleteLinking?: (targetArrowId: string) => void;
+  onCancelLinking?: () => void;
 }
 
 export const CanvasEditor: React.FC<CanvasEditorProps> = ({
@@ -55,6 +58,9 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
   onSelectPrebuildArea,
   onTriggerPrebuild,
   sourceLevelName,
+  linkingSourceArrowId,
+  onCompleteLinking,
+  onCancelLinking,
 }) => {
   const effectivePrebuildAreas: SelectionArea[] =
     prebuildAreas.length > 0 ? prebuildAreas : prebuildArea ? [prebuildArea] : [];
@@ -173,6 +179,21 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
     }
   }, [tool]);
 
+  // Keyboard listener for Escape key (cancels linking or drawing)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (linkingSourceArrowId) {
+          onCancelLinking?.();
+        } else if (drawPoints.length > 0) {
+          cancelDrawing();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [linkingSourceArrowId, onCancelLinking, drawPoints.length]);
+
   // Drag release and commit handler
   const handleDragRelease = useCallback(() => {
     setIsPanning(false);
@@ -271,6 +292,10 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
       if (e.key === 'Enter') {
         finishDrawing(true);
       } else if (e.key === 'Escape') {
+        if (linkingSourceArrowId) {
+          onCancelLinking?.();
+          return;
+        }
         cancelDrawing();
         onSelectArrowId(null);
         if (onClearPrebuildAreas) {
@@ -282,7 +307,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [drawPoints, activeColorId, hoverGridPos, tool, onClearPrebuildAreas, onSelectPrebuildArea]);
+  }, [drawPoints, activeColorId, hoverGridPos, tool, onClearPrebuildAreas, onSelectPrebuildArea, linkingSourceArrowId, onCancelLinking]);
 
   // Active dragging area (while user is actively dragging the mouse on canvas)
   const activeDragArea: SelectionArea | null =
@@ -589,6 +614,10 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
         setDrawPoints([...drawPoints, { x: nextX, y: nextY }]);
       }
     } else if (tool === 'select') {
+      if (linkingSourceArrowId) {
+        onCancelLinking?.();
+        return;
+      }
       const movedAny =
         Boolean(dragArrow?.hasMoved) ||
         Boolean(dragSegment?.hasMoved) ||
@@ -858,6 +887,30 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
         </div>
       )}
 
+      {/* Floating Link Target Picker Banner */}
+      {linkingSourceArrowId && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 px-4 py-2 bg-amber-950/90 text-white rounded-full shadow-2xl border border-amber-400/80 backdrop-blur-md animate-fade-in">
+          <div className="flex items-center gap-2">
+            <span className="flex h-2 w-2 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+            </span>
+            <Link2 className="w-4 h-4 text-amber-400 animate-spin" />
+            <span className="text-xs font-semibold">
+              Click an arrow on canvas to link with <span className="text-amber-300 font-bold underline underline-offset-2">{linkingSourceArrowId}</span>
+            </span>
+          </div>
+          <button
+            onClick={onCancelLinking}
+            className="px-2.5 py-1 text-[11px] font-bold bg-white/20 hover:bg-white/30 text-white rounded-full transition-colors flex items-center gap-1 cursor-pointer"
+            title="Cancel Linking (Esc)"
+          >
+            <X className="w-3.5 h-3.5" />
+            <span>Cancel</span>
+          </button>
+        </div>
+      )}
+
       {/* Floating Zoom & Pan Controls (Bottom-Left) */}
       <div className="absolute bottom-5 left-5 z-20 flex items-center gap-1.5 bg-white/90 backdrop-blur-md px-2 py-1.5 rounded-2xl shadow-lg border border-slate-200/80">
         <button
@@ -900,6 +953,11 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
         ) : tool === 'prebuild' ? (
           <span>
             <b>Prebuild Mode:</b> Drag to mark multiple areas • Click <b>✕</b> to remove an area
+          </span>
+        ) : linkingSourceArrowId ? (
+          <span className="text-amber-800 font-bold flex items-center gap-1.5">
+            <Link2 className="w-3.5 h-3.5 text-amber-600" />
+            <span>Click any arrow on canvas to link with <b>{linkingSourceArrowId}</b> • Esc to cancel</span>
           </span>
         ) : (
           <span>
@@ -1223,6 +1281,8 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
                   dragArrow?.arrowId === arr.id ||
                   dragSegment?.arrowId === arr.id ||
                   dragVertex?.arrowId === arr.id;
+                const isLinkSource = arr.id === linkingSourceArrowId;
+                const isLinkCandidate = Boolean(linkingSourceArrowId) && arr.id !== linkingSourceArrowId;
 
                 return (
                   <ArrowRenderer
@@ -1232,10 +1292,20 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
                     padding={padding}
                     isSelected={isSelected}
                     isDeadlocked={isDeadlocked}
-                    showHandles={tool === 'select'}
+                    isLinkSource={isLinkSource}
+                    isLinkCandidate={isLinkCandidate}
+                    showHandles={tool === 'select' && !linkingSourceArrowId}
                     isDragging={isDraggingThis}
-                    interactive={tool === 'select'}
+                    interactive={tool === 'select' || Boolean(linkingSourceArrowId)}
                     onClick={(e) => {
+                      if (linkingSourceArrowId) {
+                        e.stopPropagation();
+                        if (arr.id !== linkingSourceArrowId && onCompleteLinking) {
+                          sound.playClick();
+                          onCompleteLinking(arr.id);
+                        }
+                        return;
+                      }
                       if (tool === 'select') {
                         e.stopPropagation();
                         if (!dragArrow?.hasMoved && !dragSegment?.hasMoved && !dragVertex?.hasMoved) {
@@ -1245,21 +1315,25 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
                       }
                     }}
                     onArrowMouseDown={(e) => {
+                      if (linkingSourceArrowId) return;
                       if (tool === 'select') {
                         handleArrowMouseDown(arr, e);
                       }
                     }}
                     onMoveHandleMouseDown={(e) => {
+                      if (linkingSourceArrowId) return;
                       if (tool === 'select') {
                         handleMoveHandleMouseDown(arr, e);
                       }
                     }}
                     onSegmentMouseDown={(segIdx, e) => {
+                      if (linkingSourceArrowId) return;
                       if (tool === 'select') {
                         handleSegmentMouseDown(arr, segIdx, e);
                       }
                     }}
                     onVertexDragStart={(idx, e) => {
+                      if (linkingSourceArrowId) return;
                       if (tool === 'select') {
                         handleVertexDragStart(arr, idx, e);
                       }
