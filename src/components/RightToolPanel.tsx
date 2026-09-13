@@ -51,8 +51,11 @@ interface RightToolPanelProps {
   onChangeLayer: (delta: number, isAbsolute?: boolean) => void;
   onBringToFront: () => void;
   onSendToBack: () => void;
+  prebuildAreas?: SelectionArea[];
   prebuildArea?: SelectionArea | null;
+  onRemovePrebuildArea?: (idOrIndex: string | number) => void;
   onClearPrebuildArea?: () => void;
+  onClearPrebuildAreas?: () => void;
   onTriggerPrebuild?: () => void;
   allLevels?: Level[];
   currentLevelIndex?: number;
@@ -88,8 +91,11 @@ export const RightToolPanel: React.FC<RightToolPanelProps> = ({
   onChangeLayer,
   onBringToFront,
   onSendToBack,
+  prebuildAreas,
   prebuildArea,
+  onRemovePrebuildArea,
   onClearPrebuildArea,
+  onClearPrebuildAreas,
   onTriggerPrebuild,
   allLevels,
   currentLevelIndex,
@@ -97,6 +103,11 @@ export const RightToolPanel: React.FC<RightToolPanelProps> = ({
   onSelectReferenceLevelId,
   styleProfile,
 }) => {
+  const effectiveAreas = prebuildAreas || (prebuildArea ? [prebuildArea] : []);
+  const totalAreaCells = effectiveAreas.reduce(
+    (sum, a) => sum + (a.maxX - a.minX + 1) * (a.maxY - a.minY + 1),
+    0
+  );
   return (
     <aside className="w-72 sm:w-80 h-full bg-white border-l border-slate-200 flex flex-col shrink-0 z-20 shadow-xs select-none overflow-y-auto">
       {/* Header */}
@@ -258,14 +269,59 @@ export const RightToolPanel: React.FC<RightToolPanelProps> = ({
 
             {/* Selection Area Status & Fill CTA */}
             <div className="p-2.5 bg-white/90 rounded-xl border border-indigo-100 shadow-2xs">
-              {prebuildArea ? (
-                <div className="space-y-2">
+              {effectiveAreas.length > 0 ? (
+                <div className="space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-slate-700">Marked Area:</span>
-                    <span className="text-xs font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-200/60">
-                      {prebuildArea.maxX - prebuildArea.minX + 1} × {prebuildArea.maxY - prebuildArea.minY + 1} ({ (prebuildArea.maxX - prebuildArea.minX + 1) * (prebuildArea.maxY - prebuildArea.minY + 1) } cells)
+                    <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                      <span>Marked Areas:</span>
+                      <span className="bg-indigo-100 text-indigo-700 text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+                        {effectiveAreas.length}
+                      </span>
+                    </span>
+                    <span className="text-[11px] font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-200/60">
+                      {totalAreaCells} total cells
                     </span>
                   </div>
+
+                  {/* List of individual marked areas */}
+                  <div className="space-y-1.5 max-h-36 overflow-y-auto pr-0.5">
+                    {effectiveAreas.map((area, idx) => {
+                      const w = area.maxX - area.minX + 1;
+                      const h = area.maxY - area.minY + 1;
+                      const cells = w * h;
+                      return (
+                        <div
+                          key={area.id || idx}
+                          className="flex items-center justify-between px-2 py-1.5 bg-slate-50 hover:bg-slate-100/80 rounded-lg border border-slate-200/60 text-xs transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                              {idx + 1}
+                            </span>
+                            <span className="font-mono font-bold text-slate-700 text-[11px]">
+                              {w} × {h}
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              ({cells} cells)
+                            </span>
+                          </div>
+                          {onRemovePrebuildArea && (
+                            <button
+                              onClick={() => onRemovePrebuildArea(area.id || idx)}
+                              className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
+                              title={`Remove Area #${idx + 1}`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <p className="text-[10px] text-slate-400 italic">
+                    Drag more areas on canvas to add to the list
+                  </p>
 
                   <div className="flex items-center gap-1.5 pt-1">
                     <button
@@ -273,13 +329,18 @@ export const RightToolPanel: React.FC<RightToolPanelProps> = ({
                       className="flex-1 py-2 px-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-98"
                     >
                       <Sparkles className="w-3.5 h-3.5 fill-current" />
-                      <span>Fill Area with Style</span>
+                      <span>
+                        Fill {effectiveAreas.length > 1 ? `All ${effectiveAreas.length} Areas` : 'Area'} with Style
+                      </span>
                     </button>
-                    {onClearPrebuildArea && (
+                    {(onClearPrebuildAreas || onClearPrebuildArea) && (
                       <button
-                        onClick={onClearPrebuildArea}
+                        onClick={() => {
+                          if (onClearPrebuildAreas) onClearPrebuildAreas();
+                          else if (onClearPrebuildArea) onClearPrebuildArea();
+                        }}
                         className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-colors cursor-pointer"
-                        title="Clear Selection Area"
+                        title="Clear All Marked Areas"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -288,9 +349,9 @@ export const RightToolPanel: React.FC<RightToolPanelProps> = ({
                 </div>
               ) : (
                 <div className="text-center py-2.5 text-xs text-slate-500 space-y-1">
-                  <p className="font-bold text-indigo-950">Drag on canvas to mark area</p>
+                  <p className="font-bold text-indigo-950">Drag on canvas to mark areas</p>
                   <p className="text-[10px] text-slate-400">
-                    Click & drag across grid dots to select the bounding box to fill
+                    Click & drag across grid dots to select multiple bounding boxes to fill
                   </p>
                 </div>
               )}

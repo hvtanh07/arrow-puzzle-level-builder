@@ -70,6 +70,7 @@ export interface MoveAnalysis {
 export type EditorTool = 'select' | 'draw' | 'erase' | 'prebuild';
 
 export interface SelectionArea {
+  id?: string;
   minX: number;
   maxX: number;
   minY: number;

@@ -1,265 +1,6242 @@
 import { Level } from '../types';
 
 export const PREMADE_LEVELS: Level[] = [
-  // =========================================================================
-  // LEVEL 1: The First Chain (Grid 6x6)
-  // Concept: 3 arrows locked to each other so player understands that each
-  // arrow must be removed one by one. Strict [1, 1, 1] branching.
-  // =========================================================================
   {
-    id: 'level-1',
-    name: 'Level 1: The First Chain',
-    gridSize: { width: 6, height: 6 },
-    arrows: [
-      { id: 'blue_hook', color: 1, points: [{ x: 1, y: 3 }, { x: 1, y: 1 }, { x: 4, y: 1 }] }, // Blue = 1: (1,3)->(1,1)->(4,1) RIGHT, clear exit
-      { id: 'red_pillar', color: 0, points: [{ x: 4, y: 5 }, { x: 4, y: 2 }] }, // Red = 0: (4,5)->(4,2) UP, blocked by blue_hook at (4,1)
-      { id: 'green_runner', color: 2, points: [{ x: 1, y: 4 }, { x: 3, y: 4 }] }, // Green = 2: (1,4)->(3,4) RIGHT, blocked by red_pillar at (4,4)
-    ],
+    "id": "level-1",
+    "name": "Level 1: The First Chain",
+    "gridSize": {
+      "width": 7,
+      "height": 7
+    },
+    "arrows": [
+      {
+        "id": "arrow_0wdm",
+        "color": 0,
+        "points": [
+          {
+            "x": 1,
+            "y": 1
+          },
+          {
+            "x": 5,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_1hw3",
+        "color": 1,
+        "points": [
+          {
+            "x": 1,
+            "y": 3
+          },
+          {
+            "x": 5,
+            "y": 3
+          }
+        ]
+      },
+      {
+        "id": "arrow_1k36",
+        "color": 2,
+        "points": [
+          {
+            "x": 1,
+            "y": 5
+          },
+          {
+            "x": 5,
+            "y": 5
+          }
+        ]
+      }
+    ]
   },
-
-  // =========================================================================
-  // LEVEL 2: The Winding Hook (Grid 7x7)
-  // Concept: Locked variation with a long 2-turn hook arrow wrapping around
-  // a center dart and base dart.
-  // =========================================================================
   {
-    id: 'level-2',
-    name: 'Level 2: The Winding Hook',
-    gridSize: { width: 7, height: 7 },
-    arrows: [
-      { id: 'key', color: 7, points: [{ x: 1, y: 3 }, { x: 1, y: 0 }] }, // Cyan = 7: UP, clear exit
-      { id: 'hook', color: 4, points: [{ x: 5, y: 5 }, { x: 5, y: 2 }, { x: 2, y: 2 }] }, // Pink = 4 (2 turns): LEFT, blocked by key
-      { id: 'center_dart', color: 2, points: [{ x: 3, y: 5 }, { x: 3, y: 3 }] }, // Green = 2: UP, blocked by hook
-      { id: 'base_dart', color: 5, points: [{ x: 0, y: 4 }, { x: 2, y: 4 }] }, // Orange = 5: RIGHT, blocked by center_dart
-    ],
+    "id": "level-2",
+    "name": "Level 2: The Winding Hook",
+    "gridSize": {
+      "width": 7,
+      "height": 7
+    },
+    "arrows": [
+      {
+        "id": "arrow_36s3",
+        "color": 0,
+        "points": [
+          {
+            "x": 1,
+            "y": 5
+          },
+          {
+            "x": 1,
+            "y": 2
+          },
+          {
+            "x": 4,
+            "y": 2
+          }
+        ]
+      },
+      {
+        "id": "arrow_5wj9",
+        "color": 1,
+        "points": [
+          {
+            "x": 5,
+            "y": 5
+          },
+          {
+            "x": 5,
+            "y": 1
+          },
+          {
+            "x": 1,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_6bm7",
+        "color": 2,
+        "points": [
+          {
+            "x": 2,
+            "y": 5
+          },
+          {
+            "x": 4,
+            "y": 5
+          },
+          {
+            "x": 4,
+            "y": 3
+          },
+          {
+            "x": 2,
+            "y": 3
+          }
+        ]
+      }
+    ]
   },
-
-  // =========================================================================
-  // LEVEL 3: The Serpentine Knot (Grid 7x7)
-  // Concept: Locked variation featuring a long S-serpent with 3 turns
-  // weaving across rows 1, 3 and cols 2, 4.
-  // =========================================================================
   {
-    id: 'level-3',
-    name: 'Level 3: The Serpentine Knot',
-    gridSize: { width: 7, height: 7 },
-    arrows: [
-      { id: 'key', color: 5, points: [{ x: 1, y: 6 }, { x: 6, y: 6 }] }, // Orange = 5: RIGHT, clear exit
-      { id: 's_snake', color: 1, points: [{ x: 1, y: 1 }, { x: 4, y: 1 }, { x: 4, y: 3 }, { x: 2, y: 3 }, { x: 2, y: 5 }] }, // Blue = 1 (3 turns): DOWN, blocked by key
-      { id: 'dart_north', color: 2, points: [{ x: 3, y: 5 }, { x: 3, y: 4 }] }, // Green = 2: UP, blocked by s_snake
-      { id: 'spear_east', color: 3, points: [{ x: 6, y: 2 }, { x: 5, y: 2 }] }, // Yellow = 3: LEFT, blocked by s_snake
-      { id: 'pin_west', color: 4, points: [{ x: 0, y: 4 }, { x: 1, y: 4 }] }, // Pink = 4: RIGHT, blocked by s_snake
-    ],
+    "id": "level-3",
+    "name": "Level 3: The Serpentine Knot",
+    "gridSize": {
+      "width": 10,
+      "height": 6
+    },
+    "arrows": [
+      {
+        "id": "arrow_7gmp",
+        "color": 0,
+        "points": [
+          {
+            "x": 1,
+            "y": 3
+          },
+          {
+            "x": 1,
+            "y": 2
+          },
+          {
+            "x": 3,
+            "y": 2
+          },
+          {
+            "x": 3,
+            "y": 1
+          },
+          {
+            "x": 1,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_7n6o",
+        "color": 1,
+        "points": [
+          {
+            "x": 1,
+            "y": 4
+          },
+          {
+            "x": 2,
+            "y": 4
+          },
+          {
+            "x": 2,
+            "y": 3
+          },
+          {
+            "x": 4,
+            "y": 3
+          },
+          {
+            "x": 4,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_84dx",
+        "color": 0,
+        "points": [
+          {
+            "x": 5,
+            "y": 3
+          },
+          {
+            "x": 6,
+            "y": 3
+          }
+        ]
+      },
+      {
+        "id": "arrow_8aj3",
+        "color": 2,
+        "points": [
+          {
+            "x": 3,
+            "y": 4
+          },
+          {
+            "x": 7,
+            "y": 4
+          },
+          {
+            "x": 7,
+            "y": 2
+          },
+          {
+            "x": 6,
+            "y": 2
+          }
+        ]
+      },
+      {
+        "id": "arrow_8f8h",
+        "color": 3,
+        "points": [
+          {
+            "x": 5,
+            "y": 2
+          },
+          {
+            "x": 5,
+            "y": 1
+          },
+          {
+            "x": 8,
+            "y": 1
+          },
+          {
+            "x": 8,
+            "y": 4
+          }
+        ]
+      }
+    ]
   },
-
-  // =========================================================================
-  // LEVEL 4: The Double Winding (Grid 8x8)
-  // Concept: Two multi-turn winding arrows (outer hook + inner S-bend)
-  // interlocking with peripheral darts.
-  // =========================================================================
   {
-    id: 'level-4',
-    name: 'Level 4: The Double Winding',
-    gridSize: { width: 8, height: 8 },
-    arrows: [
-      { id: 'key', color: 7, points: [{ x: 6, y: 4 }, { x: 6, y: 0 }] }, // Cyan = 7: UP, clear exit
-      { id: 'outer_hook', color: 4, points: [{ x: 2, y: 6 }, { x: 4, y: 6 }, { x: 4, y: 2 }, { x: 5, y: 2 }] }, // Pink = 4 (2 turns): RIGHT, blocked by key
-      { id: 'inner_s', color: 1, points: [{ x: 1, y: 1 }, { x: 2, y: 1 }, { x: 2, y: 4 }] }, // Blue = 1 (2 turns): DOWN, blocked by outer_hook
-      { id: 'dart_west', color: 2, points: [{ x: 0, y: 3 }, { x: 1, y: 3 }] }, // Green = 2: RIGHT, blocked by inner_s
-      { id: 'south_dart', color: 5, points: [{ x: 5, y: 5 }, { x: 5, y: 3 }] }, // Orange = 5: UP, blocked by outer_hook
-    ],
+    "id": "level-4",
+    "name": "Level 4: The Double Winding",
+    "gridSize": {
+      "width": 8,
+      "height": 8
+    },
+    "arrows": [
+      {
+        "id": "arrow_9e60",
+        "color": 2,
+        "points": [
+          {
+            "x": 6,
+            "y": 7
+          },
+          {
+            "x": 7,
+            "y": 7
+          },
+          {
+            "x": 7,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_9u87",
+        "color": 3,
+        "points": [
+          {
+            "x": 6,
+            "y": 1
+          },
+          {
+            "x": 5,
+            "y": 1
+          },
+          {
+            "x": 5,
+            "y": 2
+          },
+          {
+            "x": 4,
+            "y": 2
+          },
+          {
+            "x": 4,
+            "y": 0
+          },
+          {
+            "x": 7,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "id": "arrow_9ym4",
+        "color": 1,
+        "points": [
+          {
+            "x": 1,
+            "y": 2
+          },
+          {
+            "x": 0,
+            "y": 2
+          },
+          {
+            "x": 0,
+            "y": 3
+          },
+          {
+            "x": 6,
+            "y": 3
+          },
+          {
+            "x": 6,
+            "y": 2
+          }
+        ]
+      },
+      {
+        "id": "arrow_a2jj",
+        "color": 0,
+        "points": [
+          {
+            "x": 2,
+            "y": 1
+          },
+          {
+            "x": 0,
+            "y": 1
+          },
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 3,
+            "y": 0
+          },
+          {
+            "x": 3,
+            "y": 2
+          },
+          {
+            "x": 2,
+            "y": 2
+          }
+        ]
+      },
+      {
+        "id": "arrow_a9nx",
+        "color": 2,
+        "points": [
+          {
+            "x": 1,
+            "y": 5
+          },
+          {
+            "x": 1,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 4
+          },
+          {
+            "x": 0,
+            "y": 4
+          }
+        ]
+      },
+      {
+        "id": "arrow_af84",
+        "color": 2,
+        "points": [
+          {
+            "x": 0,
+            "y": 5
+          },
+          {
+            "x": 0,
+            "y": 7
+          },
+          {
+            "x": 3,
+            "y": 7
+          },
+          {
+            "x": 3,
+            "y": 4
+          }
+        ]
+      },
+      {
+        "id": "arrow_akmi",
+        "color": 0,
+        "points": [
+          {
+            "x": 6,
+            "y": 5
+          },
+          {
+            "x": 6,
+            "y": 6
+          },
+          {
+            "x": 5,
+            "y": 6
+          },
+          {
+            "x": 5,
+            "y": 7
+          },
+          {
+            "x": 4,
+            "y": 7
+          },
+          {
+            "x": 4,
+            "y": 5
+          },
+          {
+            "x": 5,
+            "y": 5
+          },
+          {
+            "x": 5,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 4
+          }
+        ]
+      }
+    ]
   },
-
-  // =========================================================================
-  // LEVEL 5: The Coiled Labyrinth (Grid 8x8)
-  // Concept: Two large 3-turn serpentine arrows wrapping around each other
-  // in an intricate double labyrinth with 4 interlocked pins.
-  // =========================================================================
   {
-    id: 'level-5',
-    name: 'Level 5: The Coiled Labyrinth',
-    gridSize: { width: 8, height: 8 },
-    arrows: [
-      { id: 'key_guard', color: 7, points: [{ x: 7, y: 3 }, { x: 7, y: 0 }] }, // Cyan = 7: UP, clear exit
-      { id: 'serpent_a', color: 4, points: [{ x: 1, y: 7 }, { x: 1, y: 3 }, { x: 4, y: 3 }, { x: 4, y: 1 }, { x: 6, y: 1 }] }, // Pink = 4 (3 turns): RIGHT, blocked by key_guard
-      { id: 'serpent_b', color: 1, points: [{ x: 6, y: 6 }, { x: 3, y: 6 }, { x: 3, y: 4 }, { x: 5, y: 4 }, { x: 5, y: 2 }] }, // Blue = 1 (3 turns): UP, blocked by serpent_a
-      { id: 'pin_west', color: 2, points: [{ x: 0, y: 2 }, { x: 2, y: 2 }] }, // Green = 2: RIGHT, blocked by serpent_a
-      { id: 'pin_south', color: 5, points: [{ x: 2, y: 7 }, { x: 2, y: 5 }] }, // Orange = 5: UP, blocked by serpent_b
-      { id: 'east_dart', color: 6, points: [{ x: 7, y: 5 }, { x: 6, y: 5 }] }, // Brown = 6: LEFT, blocked by serpent_b
-    ],
+    "id": "level-5",
+    "name": "Level 5: The Coiled Labyrinth",
+    "gridSize": {
+      "width": 10,
+      "height": 10
+    },
+    "arrows": [
+      {
+        "id": "arrow_coyx",
+        "color": 3,
+        "points": [
+          {
+            "x": 3,
+            "y": 0
+          },
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 0,
+            "y": 6
+          },
+          {
+            "x": 1,
+            "y": 6
+          }
+        ]
+      },
+      {
+        "id": "arrow_d19h",
+        "color": 0,
+        "points": [
+          {
+            "x": 2,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 7
+          },
+          {
+            "x": 0,
+            "y": 7
+          },
+          {
+            "x": 0,
+            "y": 9
+          }
+        ]
+      },
+      {
+        "id": "arrow_damg",
+        "color": 1,
+        "points": [
+          {
+            "x": 2,
+            "y": 4
+          },
+          {
+            "x": 2,
+            "y": 2
+          },
+          {
+            "x": 3,
+            "y": 2
+          },
+          {
+            "x": 3,
+            "y": 8
+          },
+          {
+            "x": 1,
+            "y": 8
+          }
+        ]
+      },
+      {
+        "id": "arrow_deyv",
+        "color": 0,
+        "points": [
+          {
+            "x": 1,
+            "y": 9
+          },
+          {
+            "x": 4,
+            "y": 9
+          },
+          {
+            "x": 4,
+            "y": 2
+          }
+        ]
+      },
+      {
+        "id": "arrow_dnos",
+        "color": 3,
+        "points": [
+          {
+            "x": 6,
+            "y": 9
+          },
+          {
+            "x": 6,
+            "y": 6
+          },
+          {
+            "x": 7,
+            "y": 6
+          },
+          {
+            "x": 7,
+            "y": 5
+          },
+          {
+            "x": 5,
+            "y": 5
+          },
+          {
+            "x": 5,
+            "y": 9
+          }
+        ]
+      },
+      {
+        "id": "arrow_dw2d",
+        "color": 2,
+        "points": [
+          {
+            "x": 7,
+            "y": 7
+          },
+          {
+            "x": 7,
+            "y": 8
+          },
+          {
+            "x": 8,
+            "y": 8
+          },
+          {
+            "x": 8,
+            "y": 3
+          },
+          {
+            "x": 6,
+            "y": 3
+          },
+          {
+            "x": 6,
+            "y": 4
+          }
+        ]
+      },
+      {
+        "id": "arrow_dyue",
+        "color": 0,
+        "points": [
+          {
+            "x": 7,
+            "y": 9
+          },
+          {
+            "x": 9,
+            "y": 9
+          },
+          {
+            "x": 9,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "id": "arrow_e3k5",
+        "color": 2,
+        "points": [
+          {
+            "x": 2,
+            "y": 5
+          },
+          {
+            "x": 1,
+            "y": 5
+          },
+          {
+            "x": 1,
+            "y": 1
+          },
+          {
+            "x": 7,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_e8xu",
+        "color": 1,
+        "points": [
+          {
+            "x": 4,
+            "y": 0
+          },
+          {
+            "x": 8,
+            "y": 0
+          },
+          {
+            "x": 8,
+            "y": 2
+          },
+          {
+            "x": 5,
+            "y": 2
+          },
+          {
+            "x": 5,
+            "y": 4
+          }
+        ]
+      }
+    ]
   },
-
-  // =========================================================================
-  // LEVEL 6: Tangled Noise (Grid 8x8)
-  // Concept: Genuine visual and structural noise composed of 6 winding
-  // multi-bend arrows (S-hooks, U-turns, zigzags, meanders) intertwined.
-  // =========================================================================
   {
-    id: 'level-6',
-    name: 'Level 6: Tangled Noise',
-    gridSize: { width: 8, height: 8 },
-    arrows: [
-      // Key S-Hook (Cyan = 7, 3 turns): Exits UP at (2,0)
-      { id: 'a1_key', color: 7, points: [{ x: 0, y: 5 }, { x: 0, y: 1 }, { x: 2, y: 1 }, { x: 2, y: 0 }] },
-      // Hook Top (Red = 0, 2 turns): (7,2) -> (4,2) -> (4,1) -> (3,1). Points LEFT into a1_key
-      { id: 'a2_top_hook', color: 0, points: [{ x: 7, y: 2 }, { x: 4, y: 2 }, { x: 4, y: 1 }, { x: 3, y: 1 }] },
-      // U-West (Blue = 1, 2 turns): (1,6) -> (1,3) -> (3,3) -> (3,2). Points UP into a2_top_hook
-      { id: 'a3_west_u', color: 1, points: [{ x: 1, y: 6 }, { x: 1, y: 3 }, { x: 3, y: 3 }, { x: 3, y: 2 }] },
-      // Center S (Green = 2, 3 turns): (7,5) -> (5,5) -> (5,4) -> (6,4) -> (6,3). Points UP into a2_top_hook
-      { id: 'a4_center_s', color: 2, points: [{ x: 7, y: 5 }, { x: 5, y: 5 }, { x: 5, y: 4 }, { x: 6, y: 4 }, { x: 6, y: 3 }] },
-      // Mid Zigzag (Yellow = 3, 3 turns): (2,7) -> (2,5) -> (4,5) -> (4,4) -> (3,4). Points LEFT into a3_west_u
-      { id: 'a5_mid_zigzag', color: 3, points: [{ x: 2, y: 7 }, { x: 2, y: 5 }, { x: 4, y: 5 }, { x: 4, y: 4 }, { x: 3, y: 4 }] },
-      // Base Meander (Orange = 5, 2 turns): (6,7) -> (6,6) -> (5,6) -> (3,6). Points LEFT into a5_mid_zigzag
-      { id: 'a6_base_meander', color: 5, points: [{ x: 6, y: 7 }, { x: 6, y: 6 }, { x: 5, y: 6 }, { x: 3, y: 6 }] },
-    ],
+    "id": "level-6",
+    "name": "Level 6: Tangled Noise",
+    "gridSize": {
+      "width": 12,
+      "height": 11
+    },
+    "arrows": [
+      {
+        "id": "arrow_fx39",
+        "color": 0,
+        "points": [
+          {
+            "x": 10,
+            "y": 1
+          },
+          {
+            "x": 4,
+            "y": 1
+          },
+          {
+            "x": 4,
+            "y": 0
+          },
+          {
+            "x": 0,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "id": "arrow_fz7z",
+        "color": 0,
+        "points": [
+          {
+            "x": 0,
+            "y": 1
+          },
+          {
+            "x": 1,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_g8cv",
+        "color": 2,
+        "points": [
+          {
+            "x": 4,
+            "y": 6
+          },
+          {
+            "x": 0,
+            "y": 6
+          },
+          {
+            "x": 0,
+            "y": 2
+          },
+          {
+            "x": 2,
+            "y": 2
+          },
+          {
+            "x": 2,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_gaul",
+        "color": 1,
+        "points": [
+          {
+            "x": 2,
+            "y": 3
+          },
+          {
+            "x": 1,
+            "y": 3
+          }
+        ]
+      },
+      {
+        "id": "arrow_gkxo",
+        "color": 0,
+        "points": [
+          {
+            "x": 4,
+            "y": 3
+          },
+          {
+            "x": 3,
+            "y": 3
+          },
+          {
+            "x": 3,
+            "y": 4
+          },
+          {
+            "x": 1,
+            "y": 4
+          },
+          {
+            "x": 1,
+            "y": 5
+          },
+          {
+            "x": 3,
+            "y": 5
+          }
+        ]
+      },
+      {
+        "id": "arrow_gt14",
+        "color": 3,
+        "points": [
+          {
+            "x": 6,
+            "y": 2
+          },
+          {
+            "x": 3,
+            "y": 2
+          },
+          {
+            "x": 3,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_h5bn",
+        "color": 2,
+        "points": [
+          {
+            "x": 4,
+            "y": 4
+          },
+          {
+            "x": 4,
+            "y": 5
+          },
+          {
+            "x": 5,
+            "y": 5
+          },
+          {
+            "x": 5,
+            "y": 3
+          },
+          {
+            "x": 6,
+            "y": 3
+          },
+          {
+            "x": 6,
+            "y": 5
+          }
+        ]
+      },
+      {
+        "id": "arrow_h7dv",
+        "color": 0,
+        "points": [
+          {
+            "x": 5,
+            "y": 6
+          },
+          {
+            "x": 6,
+            "y": 6
+          }
+        ]
+      },
+      {
+        "id": "arrow_hb0u",
+        "color": 0,
+        "points": [
+          {
+            "x": 8,
+            "y": 6
+          },
+          {
+            "x": 8,
+            "y": 3
+          }
+        ]
+      },
+      {
+        "id": "arrow_hiuh",
+        "color": 1,
+        "points": [
+          {
+            "x": 7,
+            "y": 6
+          },
+          {
+            "x": 7,
+            "y": 2
+          },
+          {
+            "x": 10,
+            "y": 2
+          },
+          {
+            "x": 10,
+            "y": 6
+          }
+        ]
+      },
+      {
+        "id": "arrow_hnqq",
+        "color": 1,
+        "points": [
+          {
+            "x": 9,
+            "y": 3
+          },
+          {
+            "x": 9,
+            "y": 7
+          },
+          {
+            "x": 2,
+            "y": 7
+          }
+        ]
+      },
+      {
+        "id": "arrow_hun5",
+        "color": 3,
+        "points": [
+          {
+            "x": 7,
+            "y": 9
+          },
+          {
+            "x": 6,
+            "y": 9
+          },
+          {
+            "x": 6,
+            "y": 10
+          },
+          {
+            "x": 5,
+            "y": 10
+          },
+          {
+            "x": 5,
+            "y": 9
+          },
+          {
+            "x": 4,
+            "y": 9
+          },
+          {
+            "x": 4,
+            "y": 8
+          },
+          {
+            "x": 7,
+            "y": 8
+          }
+        ]
+      },
+      {
+        "id": "arrow_j248",
+        "color": 2,
+        "points": [
+          {
+            "x": 11,
+            "y": 1
+          },
+          {
+            "x": 11,
+            "y": 6
+          }
+        ]
+      },
+      {
+        "id": "arrow_jdjn",
+        "color": 3,
+        "points": [
+          {
+            "x": 7,
+            "y": 0
+          },
+          {
+            "x": 11,
+            "y": 0
+          }
+        ]
+      }
+    ]
   },
-
-  // =========================================================================
-  // LEVEL 7: The Domino Spiral (Grid 8x8)
-  // Concept: A satisfying interlocking puzzle box sequence of nested L-hooks
-  // and elbows where each arrow unblocks the next in a rhythmic cascade.
-  // =========================================================================
   {
-    id: 'level-7',
-    name: 'Level 7: The Domino Spiral',
-    gridSize: { width: 8, height: 8 },
-    arrows: [
-      // 0. Outer Frame (Cyan = 7): L-hook from (0,7) -> (7,7) -> (7,0). Points UP, exits off top
-      { id: 'a0_frame', color: 7, points: [{ x: 0, y: 7 }, { x: 7, y: 7 }, { x: 7, y: 0 }] },
-      // 1. Hook 1 (Red = 0): L-hook (2,5) -> (5,5) -> (6,5). Points RIGHT, blocked by a0_frame
-      { id: 'a1_hook1', color: 0, points: [{ x: 2, y: 5 }, { x: 5, y: 5 }, { x: 6, y: 5 }] },
-      // 2. Hook 2 (Blue = 1): L-hook (6,1) -> (5,1) -> (5,4). Points DOWN, blocked by a1_hook1
-      { id: 'a2_hook2', color: 1, points: [{ x: 6, y: 1 }, { x: 5, y: 1 }, { x: 5, y: 4 }] },
-      // 3. Hook 3 (Green = 2): L-hook (1,6) -> (1,3) -> (4,3). Points RIGHT, blocked by a2_hook2
-      { id: 'a3_hook3', color: 2, points: [{ x: 1, y: 6 }, { x: 1, y: 3 }, { x: 4, y: 3 }] },
-      // 4. Hook 4 (Yellow = 3): L-hook (4,0) -> (3,0) -> (3,2). Points DOWN, blocked by a3_hook3
-      { id: 'a4_hook4', color: 3, points: [{ x: 4, y: 0 }, { x: 3, y: 0 }, { x: 3, y: 2 }] },
-      // 5. Hook 5 (Pink = 4): (0,2) -> (2,2). Points RIGHT, blocked by a4_hook4
-      { id: 'a5_hook5', color: 4, points: [{ x: 0, y: 2 }, { x: 2, y: 2 }] },
-      // 6. Hook 6 (Orange = 5): (2,0) -> (2,1). Points DOWN into a5_hook5
-      { id: 'a6_hook6', color: 5, points: [{ x: 2, y: 0 }, { x: 2, y: 1 }] },
-    ],
+    "id": "level-7",
+    "name": "Level 7: The Domino Spiral",
+    "gridSize": {
+      "width": 12,
+      "height": 12
+    },
+    "arrows": [
+      {
+        "id": "arrow_l9ru",
+        "color": 2,
+        "points": [
+          {
+            "x": 2,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 11
+          },
+          {
+            "x": 0,
+            "y": 11
+          },
+          {
+            "x": 0,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "id": "arrow_lc02",
+        "color": 0,
+        "points": [
+          {
+            "x": 1,
+            "y": 1
+          },
+          {
+            "x": 1,
+            "y": 0
+          },
+          {
+            "x": 2,
+            "y": 0
+          },
+          {
+            "x": 2,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_lnsd",
+        "color": 3,
+        "points": [
+          {
+            "x": 2,
+            "y": 3
+          },
+          {
+            "x": 2,
+            "y": 9
+          },
+          {
+            "x": 3,
+            "y": 9
+          },
+          {
+            "x": 3,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "id": "arrow_lrv9",
+        "color": 0,
+        "points": [
+          {
+            "x": 2,
+            "y": 10
+          },
+          {
+            "x": 4,
+            "y": 10
+          },
+          {
+            "x": 4,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "id": "arrow_lzdi",
+        "color": 3,
+        "points": [
+          {
+            "x": 6,
+            "y": 9
+          },
+          {
+            "x": 5,
+            "y": 9
+          },
+          {
+            "x": 5,
+            "y": 10
+          },
+          {
+            "x": 7,
+            "y": 10
+          },
+          {
+            "x": 7,
+            "y": 8
+          },
+          {
+            "x": 5,
+            "y": 8
+          }
+        ]
+      },
+      {
+        "id": "arrow_me7z",
+        "color": 0,
+        "points": [
+          {
+            "x": 10,
+            "y": 10
+          },
+          {
+            "x": 8,
+            "y": 10
+          },
+          {
+            "x": 8,
+            "y": 8
+          },
+          {
+            "x": 11,
+            "y": 8
+          }
+        ]
+      },
+      {
+        "id": "arrow_mi43",
+        "color": 1,
+        "points": [
+          {
+            "x": 2,
+            "y": 11
+          },
+          {
+            "x": 11,
+            "y": 11
+          },
+          {
+            "x": 11,
+            "y": 9
+          },
+          {
+            "x": 9,
+            "y": 9
+          }
+        ]
+      },
+      {
+        "id": "arrow_mr17",
+        "color": 1,
+        "points": [
+          {
+            "x": 10,
+            "y": 1
+          },
+          {
+            "x": 5,
+            "y": 1
+          },
+          {
+            "x": 5,
+            "y": 7
+          },
+          {
+            "x": 7,
+            "y": 7
+          }
+        ]
+      },
+      {
+        "id": "arrow_msta",
+        "color": 3,
+        "points": [
+          {
+            "x": 5,
+            "y": 0
+          },
+          {
+            "x": 11,
+            "y": 0
+          },
+          {
+            "x": 11,
+            "y": 7
+          }
+        ]
+      },
+      {
+        "id": "arrow_nekv",
+        "color": 2,
+        "points": [
+          {
+            "x": 7,
+            "y": 2
+          },
+          {
+            "x": 6,
+            "y": 2
+          },
+          {
+            "x": 6,
+            "y": 3
+          },
+          {
+            "x": 7,
+            "y": 3
+          },
+          {
+            "x": 7,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 6
+          },
+          {
+            "x": 7,
+            "y": 6
+          }
+        ]
+      },
+      {
+        "id": "arrow_nl1e",
+        "color": 0,
+        "points": [
+          {
+            "x": 10,
+            "y": 5
+          },
+          {
+            "x": 10,
+            "y": 2
+          },
+          {
+            "x": 8,
+            "y": 2
+          },
+          {
+            "x": 8,
+            "y": 7
+          },
+          {
+            "x": 10,
+            "y": 7
+          }
+        ]
+      },
+      {
+        "id": "arrow_nmyh",
+        "color": 1,
+        "points": [
+          {
+            "x": 9,
+            "y": 3
+          },
+          {
+            "x": 9,
+            "y": 6
+          },
+          {
+            "x": 10,
+            "y": 6
+          }
+        ]
+      }
+    ]
   },
-
-  // =========================================================================
-  // =========================================================================
-  // LEVEL 8: The Interwoven Comb (Grid 8x8 - Evenly Filled 78% Density)
-  // Concept: Dense, evenly distributed comb architecture across all 8 rows and
-  // 8 columns. Dual vertical spines interlock with horizontal teeth and pillars.
-  // =========================================================================
   {
-    id: 'level-8',
-    name: 'Level 8: The Interwoven Comb',
-    gridSize: { width: 8, height: 8 },
-    arrows: [
-      // Top Key (Cyan = 7): (7,0) -> (0,0) [LEFT, clear exit off left edge]
-      { id: 'top_key', color: 7, points: [{ x: 7, y: 0 }, { x: 0, y: 0 }] },
-
-      // East Spine (Pink = 4): Col 5, (5,7) -> (5,1). Points UP, blocked by top_key at (5,0)
-      { id: 'spine_east', color: 4, points: [{ x: 5, y: 7 }, { x: 5, y: 1 }] },
-
-      // West Spine (Yellow = 3): Col 2, (2,7) -> (2,1). Points UP, blocked by top_key at (2,0)
-      { id: 'spine_west', color: 3, points: [{ x: 2, y: 7 }, { x: 2, y: 1 }] },
-
-      // Left Teeth in cols 0..1 (Rows 1, 3, 5) pointing RIGHT into spine_west:
-      { id: 'l_tooth_1', color: 2, points: [{ x: 0, y: 1 }, { x: 1, y: 1 }] },
-      { id: 'l_tooth_2', color: 4, points: [{ x: 0, y: 3 }, { x: 1, y: 3 }] },
-      { id: 'l_tooth_3', color: 1, points: [{ x: 0, y: 5 }, { x: 1, y: 5 }] },
-
-      // Right Teeth in cols 6..7 (Rows 2, 4, 6) pointing LEFT into spine_east:
-      { id: 'r_tooth_1', color: 0, points: [{ x: 7, y: 2 }, { x: 6, y: 2 }] },
-      { id: 'r_tooth_2', color: 5, points: [{ x: 7, y: 4 }, { x: 6, y: 4 }] },
-      { id: 'r_tooth_3', color: 6, points: [{ x: 7, y: 6 }, { x: 6, y: 6 }] },
-
-      // Center vertical pillars: Cols 3 and 4 pointing DOWN, blocked by bc_runner
-      { id: 'c_pillar_1', color: 1, points: [{ x: 3, y: 1 }, { x: 3, y: 5 }] },
-      { id: 'c_pillar_2', color: 2, points: [{ x: 4, y: 1 }, { x: 4, y: 5 }] },
-
-      // Bottom runners:
-      { id: 'bl_runner', color: 0, points: [{ x: 1, y: 7 }, { x: 0, y: 7 }] }, // LEFT off board
-      { id: 'bc_runner', color: 7, points: [{ x: 3, y: 7 }, { x: 4, y: 7 }] }, // RIGHT into spine_east
-      { id: 'br_runner', color: 6, points: [{ x: 6, y: 7 }, { x: 7, y: 7 }] }, // RIGHT off board
-    ],
+    "id": "level-8",
+    "name": "Level 8: The Interwoven Comb",
+    "gridSize": {
+      "width": 13,
+      "height": 13
+    },
+    "arrows": [
+      {
+        "id": "arrow_qwh4",
+        "color": 2,
+        "points": [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 4,
+            "y": 0
+          },
+          {
+            "x": 4,
+            "y": 1
+          },
+          {
+            "x": 0,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_rbbb",
+        "color": 1,
+        "points": [
+          {
+            "x": 7,
+            "y": 8
+          },
+          {
+            "x": 4,
+            "y": 8
+          },
+          {
+            "x": 4,
+            "y": 5
+          },
+          {
+            "x": 0,
+            "y": 5
+          },
+          {
+            "x": 0,
+            "y": 2
+          }
+        ]
+      },
+      {
+        "id": "arrow_rdsw",
+        "color": 0,
+        "points": [
+          {
+            "x": 1,
+            "y": 4
+          },
+          {
+            "x": 1,
+            "y": 2
+          }
+        ]
+      },
+      {
+        "id": "arrow_rh4o",
+        "color": 3,
+        "points": [
+          {
+            "x": 4,
+            "y": 2
+          },
+          {
+            "x": 2,
+            "y": 2
+          },
+          {
+            "x": 2,
+            "y": 3
+          },
+          {
+            "x": 4,
+            "y": 3
+          }
+        ]
+      },
+      {
+        "id": "arrow_rqhx",
+        "color": 0,
+        "points": [
+          {
+            "x": 8,
+            "y": 3
+          },
+          {
+            "x": 8,
+            "y": 0
+          },
+          {
+            "x": 5,
+            "y": 0
+          },
+          {
+            "x": 5,
+            "y": 4
+          },
+          {
+            "x": 2,
+            "y": 4
+          }
+        ]
+      },
+      {
+        "id": "arrow_rvsa",
+        "color": 1,
+        "points": [
+          {
+            "x": 6,
+            "y": 2
+          },
+          {
+            "x": 6,
+            "y": 1
+          },
+          {
+            "x": 7,
+            "y": 1
+          },
+          {
+            "x": 7,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "id": "arrow_s4gq",
+        "color": 2,
+        "points": [
+          {
+            "x": 6,
+            "y": 3
+          },
+          {
+            "x": 6,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 6
+          },
+          {
+            "x": 7,
+            "y": 6
+          },
+          {
+            "x": 7,
+            "y": 7
+          },
+          {
+            "x": 5,
+            "y": 7
+          },
+          {
+            "x": 5,
+            "y": 5
+          }
+        ]
+      },
+      {
+        "id": "arrow_sbur",
+        "color": 3,
+        "points": [
+          {
+            "x": 12,
+            "y": 2
+          },
+          {
+            "x": 12,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 7
+          },
+          {
+            "x": 8,
+            "y": 7
+          }
+        ]
+      },
+      {
+        "id": "arrow_sgf8",
+        "color": 2,
+        "points": [
+          {
+            "x": 11,
+            "y": 1
+          },
+          {
+            "x": 11,
+            "y": 3
+          },
+          {
+            "x": 12,
+            "y": 3
+          },
+          {
+            "x": 12,
+            "y": 4
+          },
+          {
+            "x": 11,
+            "y": 4
+          },
+          {
+            "x": 11,
+            "y": 5
+          }
+        ]
+      },
+      {
+        "id": "arrow_slus",
+        "color": 1,
+        "points": [
+          {
+            "x": 12,
+            "y": 7
+          },
+          {
+            "x": 12,
+            "y": 12
+          },
+          {
+            "x": 11,
+            "y": 12
+          },
+          {
+            "x": 11,
+            "y": 6
+          },
+          {
+            "x": 12,
+            "y": 6
+          }
+        ]
+      },
+      {
+        "id": "arrow_som0",
+        "color": 0,
+        "points": [
+          {
+            "x": 3,
+            "y": 6
+          },
+          {
+            "x": 0,
+            "y": 6
+          }
+        ]
+      },
+      {
+        "id": "arrow_sv22",
+        "color": 2,
+        "points": [
+          {
+            "x": 1,
+            "y": 9
+          },
+          {
+            "x": 1,
+            "y": 8
+          },
+          {
+            "x": 2,
+            "y": 8
+          },
+          {
+            "x": 2,
+            "y": 10
+          },
+          {
+            "x": 1,
+            "y": 10
+          }
+        ]
+      },
+      {
+        "id": "arrow_t23g",
+        "color": 1,
+        "points": [
+          {
+            "x": 2,
+            "y": 11
+          },
+          {
+            "x": 1,
+            "y": 11
+          },
+          {
+            "x": 1,
+            "y": 12
+          },
+          {
+            "x": 3,
+            "y": 12
+          },
+          {
+            "x": 3,
+            "y": 7
+          },
+          {
+            "x": 0,
+            "y": 7
+          },
+          {
+            "x": 0,
+            "y": 12
+          }
+        ]
+      },
+      {
+        "id": "arrow_tdqh",
+        "color": 0,
+        "points": [
+          {
+            "x": 9,
+            "y": 9
+          },
+          {
+            "x": 8,
+            "y": 9
+          },
+          {
+            "x": 8,
+            "y": 8
+          },
+          {
+            "x": 10,
+            "y": 8
+          },
+          {
+            "x": 10,
+            "y": 12
+          },
+          {
+            "x": 4,
+            "y": 12
+          }
+        ]
+      },
+      {
+        "id": "arrow_tiim",
+        "color": 3,
+        "points": [
+          {
+            "x": 9,
+            "y": 10
+          },
+          {
+            "x": 9,
+            "y": 11
+          },
+          {
+            "x": 8,
+            "y": 11
+          },
+          {
+            "x": 8,
+            "y": 10
+          },
+          {
+            "x": 6,
+            "y": 10
+          },
+          {
+            "x": 6,
+            "y": 9
+          },
+          {
+            "x": 7,
+            "y": 9
+          }
+        ]
+      },
+      {
+        "id": "arrow_tmqj",
+        "color": 2,
+        "points": [
+          {
+            "x": 4,
+            "y": 9
+          },
+          {
+            "x": 5,
+            "y": 9
+          },
+          {
+            "x": 5,
+            "y": 10
+          },
+          {
+            "x": 4,
+            "y": 10
+          },
+          {
+            "x": 4,
+            "y": 11
+          },
+          {
+            "x": 7,
+            "y": 11
+          }
+        ]
+      }
+    ]
   },
-
-  // =========================================================================
-  // LEVEL 9: The Gentle Breeze (Grid 6x6 - Evenly Filled 78% Density)
-  // Concept: An easy breather level before the finale, but evenly filled across
-  // all 6 rows and columns with no empty center hole.
-  // =========================================================================
   {
-    id: 'level-9',
-    name: 'Level 9: The Gentle Breeze',
-    gridSize: { width: 6, height: 6 },
-    arrows: [
-      // Top border: row 0
-      { id: 'top_left', color: 3, points: [{ x: 2, y: 0 }, { x: 0, y: 0 }] }, // Yellow = 3: LEFT, clear
-      { id: 'top_right', color: 5, points: [{ x: 3, y: 0 }, { x: 5, y: 0 }] }, // Orange = 5: RIGHT, clear
-      // Center columns 2 & 3: Filling the board core!
-      { id: 'center_up', color: 1, points: [{ x: 2, y: 4 }, { x: 2, y: 1 }] }, // Blue = 1: UP, blocked by top_left
-      { id: 'center_down', color: 2, points: [{ x: 3, y: 1 }, { x: 3, y: 4 }] }, // Green = 2: DOWN, blocked by bot_right
-      // West & East flanks:
-      { id: 'west_down', color: 4, points: [{ x: 1, y: 1 }, { x: 1, y: 4 }] }, // Pink = 4: DOWN, clear
-      { id: 'east_up', color: 7, points: [{ x: 4, y: 4 }, { x: 4, y: 1 }] }, // Cyan = 7: UP, clear
-      // Bottom border: row 5
-      { id: 'bot_left', color: 0, points: [{ x: 2, y: 5 }, { x: 0, y: 5 }] }, // Red = 0: LEFT, clear
-      { id: 'bot_right', color: 6, points: [{ x: 3, y: 5 }, { x: 5, y: 5 }] }, // Brown = 6: RIGHT, clear
-    ],
+    "id": "level-9",
+    "name": "Level 9: The Gentle Breeze",
+    "gridSize": {
+      "width": 11,
+      "height": 10
+    },
+    "arrows": [
+      {
+        "id": "arrow_w3ed",
+        "color": 1,
+        "points": [
+          {
+            "x": 1,
+            "y": 0
+          },
+          {
+            "x": 0,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "id": "arrow_wcs8",
+        "color": 3,
+        "points": [
+          {
+            "x": 3,
+            "y": 1
+          },
+          {
+            "x": 3,
+            "y": 0
+          },
+          {
+            "x": 2,
+            "y": 0
+          },
+          {
+            "x": 2,
+            "y": 1
+          },
+          {
+            "x": 1,
+            "y": 1
+          },
+          {
+            "x": 1,
+            "y": 2
+          },
+          {
+            "x": 2,
+            "y": 2
+          },
+          {
+            "x": 2,
+            "y": 3
+          },
+          {
+            "x": 0,
+            "y": 3
+          },
+          {
+            "x": 0,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_we40",
+        "color": 0,
+        "points": [
+          {
+            "x": 3,
+            "y": 2
+          },
+          {
+            "x": 3,
+            "y": 3
+          }
+        ]
+      },
+      {
+        "id": "arrow_wfei",
+        "color": 2,
+        "points": [
+          {
+            "x": 4,
+            "y": 0
+          },
+          {
+            "x": 4,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_wqxt",
+        "color": 1,
+        "points": [
+          {
+            "x": 2,
+            "y": 7
+          },
+          {
+            "x": 2,
+            "y": 9
+          },
+          {
+            "x": 1,
+            "y": 9
+          },
+          {
+            "x": 1,
+            "y": 8
+          },
+          {
+            "x": 0,
+            "y": 8
+          },
+          {
+            "x": 0,
+            "y": 7
+          },
+          {
+            "x": 1,
+            "y": 7
+          },
+          {
+            "x": 1,
+            "y": 4
+          }
+        ]
+      },
+      {
+        "id": "arrow_ws1p",
+        "color": 0,
+        "points": [
+          {
+            "x": 0,
+            "y": 4
+          },
+          {
+            "x": 0,
+            "y": 6
+          }
+        ]
+      },
+      {
+        "id": "arrow_wv8u",
+        "color": 2,
+        "points": [
+          {
+            "x": 2,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 4
+          },
+          {
+            "x": 3,
+            "y": 4
+          },
+          {
+            "x": 3,
+            "y": 5
+          }
+        ]
+      },
+      {
+        "id": "arrow_wyu0",
+        "color": 0,
+        "points": [
+          {
+            "x": 4,
+            "y": 5
+          },
+          {
+            "x": 4,
+            "y": 6
+          },
+          {
+            "x": 3,
+            "y": 6
+          },
+          {
+            "x": 3,
+            "y": 8
+          }
+        ]
+      },
+      {
+        "id": "arrow_x62u",
+        "color": 1,
+        "points": [
+          {
+            "x": 5,
+            "y": 0
+          },
+          {
+            "x": 5,
+            "y": 2
+          },
+          {
+            "x": 4,
+            "y": 2
+          },
+          {
+            "x": 4,
+            "y": 4
+          },
+          {
+            "x": 5,
+            "y": 4
+          },
+          {
+            "x": 5,
+            "y": 7
+          },
+          {
+            "x": 4,
+            "y": 7
+          }
+        ]
+      },
+      {
+        "id": "arrow_xdc5",
+        "color": 3,
+        "points": [
+          {
+            "x": 4,
+            "y": 8
+          },
+          {
+            "x": 4,
+            "y": 9
+          }
+        ]
+      },
+      {
+        "id": "arrow_xkuc",
+        "color": 2,
+        "points": [
+          {
+            "x": 9,
+            "y": 5
+          },
+          {
+            "x": 7,
+            "y": 5
+          },
+          {
+            "x": 7,
+            "y": 6
+          },
+          {
+            "x": 6,
+            "y": 6
+          },
+          {
+            "x": 6,
+            "y": 7
+          },
+          {
+            "x": 7,
+            "y": 7
+          },
+          {
+            "x": 7,
+            "y": 8
+          },
+          {
+            "x": 6,
+            "y": 8
+          },
+          {
+            "x": 6,
+            "y": 9
+          },
+          {
+            "x": 5,
+            "y": 9
+          },
+          {
+            "x": 5,
+            "y": 8
+          }
+        ]
+      },
+      {
+        "id": "arrow_xmym",
+        "color": 1,
+        "points": [
+          {
+            "x": 8,
+            "y": 6
+          },
+          {
+            "x": 8,
+            "y": 8
+          }
+        ]
+      },
+      {
+        "id": "arrow_xtix",
+        "color": 0,
+        "points": [
+          {
+            "x": 10,
+            "y": 3
+          },
+          {
+            "x": 9,
+            "y": 3
+          },
+          {
+            "x": 9,
+            "y": 4
+          },
+          {
+            "x": 10,
+            "y": 4
+          },
+          {
+            "x": 10,
+            "y": 6
+          },
+          {
+            "x": 9,
+            "y": 6
+          },
+          {
+            "x": 9,
+            "y": 9
+          },
+          {
+            "x": 7,
+            "y": 9
+          }
+        ]
+      },
+      {
+        "id": "arrow_xuz2",
+        "color": 3,
+        "points": [
+          {
+            "x": 10,
+            "y": 7
+          },
+          {
+            "x": 10,
+            "y": 9
+          }
+        ]
+      },
+      {
+        "id": "arrow_xzak",
+        "color": 1,
+        "points": [
+          {
+            "x": 10,
+            "y": 0
+          },
+          {
+            "x": 9,
+            "y": 0
+          },
+          {
+            "x": 9,
+            "y": 1
+          },
+          {
+            "x": 10,
+            "y": 1
+          },
+          {
+            "x": 10,
+            "y": 2
+          },
+          {
+            "x": 9,
+            "y": 2
+          }
+        ]
+      },
+      {
+        "id": "arrow_y2i5",
+        "color": 0,
+        "points": [
+          {
+            "x": 8,
+            "y": 0
+          },
+          {
+            "x": 8,
+            "y": 2
+          },
+          {
+            "x": 7,
+            "y": 2
+          },
+          {
+            "x": 7,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_y5ni",
+        "color": 2,
+        "points": [
+          {
+            "x": 7,
+            "y": 3
+          },
+          {
+            "x": 8,
+            "y": 3
+          },
+          {
+            "x": 8,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 1
+          }
+        ]
+      }
+    ]
   },
-
-  // =========================================================================
-  // LEVEL 10: The Master Labyrinth (Grid 10x14 - Evenly Packed 77% Density, 20 Arrows)
-  // Concept: The ultimate climax achieving full density and interlocking complexity.
-  // Spans 20 winding multi-turn arrows covering every row and column evenly,
-  // with zero resting overlaps and a thrilling 20-step escape chain.
-  // =========================================================================
   {
-    id: 'level-10',
-    name: 'Level 10: The Master Labyrinth',
-    gridSize: { width: 10, height: 14 },
-    arrows: [
-      // 0. Key Scout (Cyan = 7, 3 turns): Exits UP at (3,0)
-      { id: 'a00_scout', color: 7, points: [{ x: 1, y: 3 }, { x: 1, y: 1 }, { x: 3, y: 1 }, { x: 3, y: 0 }] },
-      // 1. Top Crown (Yellow = 3, 3 turns): Points LEFT into (3,1) on a00_scout. Exits row 1
-      { id: 'a01_crown', color: 3, points: [{ x: 9, y: 0 }, { x: 5, y: 0 }, { x: 5, y: 1 }, { x: 4, y: 1 }] },
-      // 2. Top-Left Hook (Orange = 5, 2 turns): Exits UP at (0,0)
-      { id: 'a02_tl_hook', color: 5, points: [{ x: 0, y: 4 }, { x: 0, y: 0 }] },
-      // 3. North-East Serpent (Blue = 1, 3 turns): Points LEFT into (5,1) on a01_crown
-      { id: 'a03_ne_serpent', color: 1, points: [{ x: 9, y: 2 }, { x: 8, y: 2 }, { x: 8, y: 1 }, { x: 6, y: 1 }] },
-      // 4. Upper Green Stair (Green = 2, 3 turns): Points LEFT into (0,2) on a02_tl_hook
-      { id: 'a04_upper_stair', color: 2, points: [{ x: 2, y: 4 }, { x: 3, y: 4 }, { x: 3, y: 2 }, { x: 2, y: 2 }] },
-      // 5. East Pink U-turn (Pink = 4, 3 turns): Points UP, blocked by a01_crown
-      { id: 'a05_east_u', color: 4, points: [{ x: 7, y: 4 }, { x: 9, y: 4 }, { x: 9, y: 3 }] },
-      // 6. Center Bridge (Brown = 6, 2 turns): Points LEFT into (3,3) on a04_upper_stair
-      { id: 'a06_mid_bridge', color: 6, points: [{ x: 5, y: 5 }, { x: 5, y: 3 }, { x: 4, y: 3 }] },
-      // 6b. North-Mid Filler Hook (Green = 2): Exits RIGHT at row 2 once a03 clears
-      { id: 'a06b_mid_hook', color: 2, points: [{ x: 6, y: 3 }, { x: 6, y: 2 }, { x: 7, y: 2 }] },
-      // 7. West Flank Snake (Red = 0, 3 turns): Points DOWN into col 2
-      { id: 'a07_west_flank', color: 0, points: [{ x: 0, y: 8 }, { x: 0, y: 5 }, { x: 2, y: 5 }, { x: 2, y: 6 }] },
-      // 8. Mid Horizontal Sweep (Blue = 1, 3 turns): Points RIGHT into (9,5) on a05_east_u
-      { id: 'a08_mid_sweep', color: 1, points: [{ x: 1, y: 7 }, { x: 6, y: 7 }, { x: 6, y: 5 }, { x: 7, y: 5 }] },
-      // 9. Central Cross (Green = 2, 2 turns): Points RIGHT into (6,6) on a08_mid_sweep
-      { id: 'a09_cross', color: 2, points: [{ x: 3, y: 6 }, { x: 5, y: 6 }] },
-
-      // Core S-Snake (Red = 0, 4 turns): Fills rows 8-10, cols 2-5, exits DOWN
-      { id: 'a09b_core_snake', color: 0, points: [{ x: 2, y: 8 }, { x: 5, y: 8 }, { x: 5, y: 9 }, { x: 4, y: 9 }, { x: 4, y: 10 }] },
-      // Core L-Hook (Pink = 4, 3 turns): Fills rows 9-10, cols 1-3, exits LEFT
-      { id: 'a09c_core_hook', color: 4, points: [{ x: 3, y: 10 }, { x: 2, y: 10 }, { x: 2, y: 9 }, { x: 1, y: 9 }] },
-      // Core East Pin (Brown = 6): Fills col 6 rows 8-9, exits UP
-      { id: 'a09d_core_pin', color: 6, points: [{ x: 6, y: 9 }, { x: 6, y: 8 }] },
-
-      // 10. Lower Yellow Frame (Yellow = 3, 3 turns): (1, 10) -> (1, 12) -> (8, 12) -> (8, 10). Points UP
-      { id: 'a10_yellow_frame', color: 3, points: [{ x: 1, y: 10 }, { x: 1, y: 12 }, { x: 8, y: 12 }, { x: 8, y: 10 }] },
-      // 11. Inner Cyan Hook (Cyan = 7): Points UP in col 6
-      { id: 'a11_inner_cyan', color: 7, points: [{ x: 3, y: 11 }, { x: 6, y: 11 }, { x: 6, y: 10 }] },
-      // 12. Deep Orange Snake (Orange = 5, 2 turns): Points RIGHT off board at row 8
-      { id: 'a12_deep_snake', color: 5, points: [{ x: 7, y: 10 }, { x: 7, y: 8 }, { x: 9, y: 8 }] },
-      // 12b. East Edge Runner (Blue = 1): Fills col 9 at (9,9) -> (9,12)
-      { id: 'a12b_east_edge', color: 1, points: [{ x: 9, y: 9 }, { x: 9, y: 12 }] },
-      // 13. Bottom-Left Hook (Pink = 4, 2 turns): Points RIGHT into (5,13) on a14_br_runner
-      { id: 'a13_bl_hook', color: 4, points: [{ x: 0, y: 10 }, { x: 0, y: 13 }, { x: 3, y: 13 }] },
-      // 14. Bottom-Right Runner (Brown = 6): (5, 13) -> (8, 13). Points RIGHT off right edge
-      { id: 'a14_br_runner', color: 6, points: [{ x: 5, y: 13 }, { x: 8, y: 13 }] },
-    ],
+    "id": "level-10",
+    "name": "Level 10: The Master Labyrinth",
+    "gridSize": {
+      "width": 10,
+      "height": 10
+    },
+    "arrows": [
+      {
+        "id": "arrow_04u0",
+        "color": 0,
+        "points": [
+          {
+            "x": 8,
+            "y": 1
+          },
+          {
+            "x": 8,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "id": "arrow_0gi8",
+        "color": 0,
+        "points": [
+          {
+            "x": 8,
+            "y": 6
+          },
+          {
+            "x": 8,
+            "y": 7
+          },
+          {
+            "x": 7,
+            "y": 7
+          },
+          {
+            "x": 7,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_0pau",
+        "color": 0,
+        "points": [
+          {
+            "x": 7,
+            "y": 1
+          },
+          {
+            "x": 1,
+            "y": 1
+          },
+          {
+            "x": 1,
+            "y": 0
+          },
+          {
+            "x": 7,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "id": "arrow_0xa5",
+        "color": 3,
+        "points": [
+          {
+            "x": 5,
+            "y": 3
+          },
+          {
+            "x": 1,
+            "y": 3
+          },
+          {
+            "x": 1,
+            "y": 2
+          },
+          {
+            "x": 8,
+            "y": 2
+          }
+        ]
+      },
+      {
+        "id": "arrow_0zw6",
+        "color": 3,
+        "points": [
+          {
+            "x": 7,
+            "y": 3
+          },
+          {
+            "x": 7,
+            "y": 4
+          },
+          {
+            "x": 8,
+            "y": 4
+          },
+          {
+            "x": 8,
+            "y": 3
+          }
+        ]
+      },
+      {
+        "id": "arrow_137d",
+        "color": 3,
+        "points": [
+          {
+            "x": 9,
+            "y": 6
+          },
+          {
+            "x": 9,
+            "y": 8
+          },
+          {
+            "x": 6,
+            "y": 8
+          },
+          {
+            "x": 6,
+            "y": 3
+          }
+        ]
+      },
+      {
+        "id": "arrow_1ee5",
+        "color": 2,
+        "points": [
+          {
+            "x": 4,
+            "y": 7
+          },
+          {
+            "x": 4,
+            "y": 6
+          },
+          {
+            "x": 3,
+            "y": 6
+          },
+          {
+            "x": 3,
+            "y": 8
+          },
+          {
+            "x": 5,
+            "y": 8
+          },
+          {
+            "x": 5,
+            "y": 4
+          }
+        ]
+      },
+      {
+        "id": "arrow_1kn1",
+        "color": 2,
+        "points": [
+          {
+            "x": 1,
+            "y": 7
+          },
+          {
+            "x": 1,
+            "y": 4
+          },
+          {
+            "x": 4,
+            "y": 4
+          }
+        ]
+      },
+      {
+        "id": "arrow_1n66",
+        "color": 1,
+        "points": [
+          {
+            "x": 9,
+            "y": 9
+          },
+          {
+            "x": 2,
+            "y": 9
+          },
+          {
+            "x": 2,
+            "y": 5
+          }
+        ]
+      },
+      {
+        "id": "arrow_1pkr",
+        "color": 2,
+        "points": [
+          {
+            "x": 4,
+            "y": 5
+          },
+          {
+            "x": 3,
+            "y": 5
+          }
+        ]
+      },
+      {
+        "id": "arrow_1td2",
+        "color": 1,
+        "points": [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 0,
+            "y": 9
+          },
+          {
+            "x": 1,
+            "y": 9
+          }
+        ]
+      }
+    ]
   },
+  {
+    "id": "level_mtx2bxv6",
+    "name": "Level 11",
+    "gridSize": {
+      "width": 9,
+      "height": 9
+    },
+    "arrows": [
+      {
+        "id": "arrow_cylx",
+        "color": 1,
+        "points": [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 0,
+            "y": 8
+          },
+          {
+            "x": 8,
+            "y": 8
+          },
+          {
+            "x": 8,
+            "y": 2
+          },
+          {
+            "x": 3,
+            "y": 2
+          },
+          {
+            "x": 3,
+            "y": 0
+          },
+          {
+            "x": 8,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "id": "arrow_d0zw",
+        "color": 0,
+        "points": [
+          {
+            "x": 1,
+            "y": 7
+          },
+          {
+            "x": 1,
+            "y": 1
+          },
+          {
+            "x": 8,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_exyo",
+        "color": 0,
+        "points": [
+          {
+            "x": 7,
+            "y": 7
+          },
+          {
+            "x": 7,
+            "y": 5
+          },
+          {
+            "x": 5,
+            "y": 5
+          },
+          {
+            "x": 5,
+            "y": 3
+          },
+          {
+            "x": 2,
+            "y": 3
+          }
+        ]
+      },
+      {
+        "id": "arrow_f6bd",
+        "color": 1,
+        "points": [
+          {
+            "x": 2,
+            "y": 7
+          },
+          {
+            "x": 2,
+            "y": 4
+          },
+          {
+            "x": 7,
+            "y": 4
+          },
+          {
+            "x": 7,
+            "y": 3
+          }
+        ]
+      },
+      {
+        "id": "arrow_fgi9",
+        "color": 2,
+        "points": [
+          {
+            "x": 6,
+            "y": 7
+          },
+          {
+            "x": 3,
+            "y": 7
+          },
+          {
+            "x": 3,
+            "y": 5
+          },
+          {
+            "x": 4,
+            "y": 5
+          }
+        ]
+      },
+      {
+        "id": "arrow_fjse",
+        "color": 3,
+        "points": [
+          {
+            "x": 6,
+            "y": 6
+          },
+          {
+            "x": 4,
+            "y": 6
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "level_mtx25qii",
+    "name": "Level 12",
+    "gridSize": {
+      "width": 9,
+      "height": 9
+    },
+    "arrows": [
+      {
+        "id": "arrow_9b1k",
+        "color": 2,
+        "points": [
+          {
+            "x": 0,
+            "y": 2
+          },
+          {
+            "x": 4,
+            "y": 2
+          },
+          {
+            "x": 4,
+            "y": 0
+          },
+          {
+            "x": 0,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "id": "arrow_9md8",
+        "color": 1,
+        "points": [
+          {
+            "x": 5,
+            "y": 0
+          },
+          {
+            "x": 5,
+            "y": 3
+          },
+          {
+            "x": 3,
+            "y": 3
+          },
+          {
+            "x": 3,
+            "y": 1
+          },
+          {
+            "x": 0,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_9x72",
+        "color": 0,
+        "points": [
+          {
+            "x": 0,
+            "y": 3
+          },
+          {
+            "x": 2,
+            "y": 3
+          }
+        ]
+      },
+      {
+        "id": "arrow_a3qk",
+        "color": 3,
+        "points": [
+          {
+            "x": 5,
+            "y": 5
+          },
+          {
+            "x": 5,
+            "y": 6
+          },
+          {
+            "x": 0,
+            "y": 6
+          },
+          {
+            "x": 0,
+            "y": 4
+          }
+        ]
+      },
+      {
+        "id": "arrow_a5rs",
+        "color": 0,
+        "points": [
+          {
+            "x": 4,
+            "y": 5
+          },
+          {
+            "x": 1,
+            "y": 5
+          },
+          {
+            "x": 1,
+            "y": 4
+          },
+          {
+            "x": 5,
+            "y": 4
+          }
+        ]
+      },
+      {
+        "id": "arrow_ac62",
+        "color": 1,
+        "points": [
+          {
+            "x": 8,
+            "y": 0
+          },
+          {
+            "x": 8,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "id": "arrow_adzx",
+        "color": 0,
+        "points": [
+          {
+            "x": 7,
+            "y": 0
+          },
+          {
+            "x": 7,
+            "y": 8
+          }
+        ]
+      },
+      {
+        "id": "arrow_amuz",
+        "color": 2,
+        "points": [
+          {
+            "x": 0,
+            "y": 8
+          },
+          {
+            "x": 6,
+            "y": 8
+          },
+          {
+            "x": 6,
+            "y": 7
+          },
+          {
+            "x": 0,
+            "y": 7
+          }
+        ]
+      },
+      {
+        "id": "arrow_aqzx",
+        "color": 2,
+        "points": [
+          {
+            "x": 8,
+            "y": 8
+          },
+          {
+            "x": 8,
+            "y": 6
+          },
+          {
+            "x": 6,
+            "y": 6
+          },
+          {
+            "x": 6,
+            "y": 5
+          },
+          {
+            "x": 8,
+            "y": 5
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "level_mtx2lmwq",
+    "name": "Level 13",
+    "gridSize": {
+      "width": 12,
+      "height": 12
+    },
+    "arrows": [
+      {
+        "id": "arrow_odsa",
+        "color": 0,
+        "points": [
+          {
+            "x": 11,
+            "y": 7
+          },
+          {
+            "x": 11,
+            "y": 3
+          },
+          {
+            "x": 9,
+            "y": 3
+          },
+          {
+            "x": 9,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "id": "arrow_otqb",
+        "color": 1,
+        "points": [
+          {
+            "x": 11,
+            "y": 11
+          },
+          {
+            "x": 11,
+            "y": 8
+          },
+          {
+            "x": 9,
+            "y": 8
+          },
+          {
+            "x": 9,
+            "y": 5
+          },
+          {
+            "x": 10,
+            "y": 5
+          },
+          {
+            "x": 10,
+            "y": 1
+          },
+          {
+            "x": 11,
+            "y": 1
+          },
+          {
+            "x": 11,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "id": "arrow_pcte",
+        "color": 2,
+        "points": [
+          {
+            "x": 10,
+            "y": 6
+          },
+          {
+            "x": 10,
+            "y": 9
+          },
+          {
+            "x": 9,
+            "y": 9
+          },
+          {
+            "x": 9,
+            "y": 10
+          },
+          {
+            "x": 10,
+            "y": 10
+          },
+          {
+            "x": 10,
+            "y": 11
+          }
+        ]
+      },
+      {
+        "id": "arrow_ptlx",
+        "color": 2,
+        "points": [
+          {
+            "x": 7,
+            "y": 2
+          },
+          {
+            "x": 7,
+            "y": 0
+          },
+          {
+            "x": 5,
+            "y": 0
+          },
+          {
+            "x": 5,
+            "y": 2
+          }
+        ]
+      },
+      {
+        "id": "arrow_qq7b",
+        "color": 1,
+        "points": [
+          {
+            "x": 7,
+            "y": 5
+          },
+          {
+            "x": 7,
+            "y": 3
+          },
+          {
+            "x": 6,
+            "y": 3
+          },
+          {
+            "x": 6,
+            "y": 1
+          },
+          {
+            "x": 4,
+            "y": 1
+          },
+          {
+            "x": 4,
+            "y": 0
+          },
+          {
+            "x": 0,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "id": "arrow_r2hc",
+        "color": 0,
+        "points": [
+          {
+            "x": 5,
+            "y": 5
+          },
+          {
+            "x": 5,
+            "y": 3
+          },
+          {
+            "x": 4,
+            "y": 3
+          },
+          {
+            "x": 4,
+            "y": 2
+          },
+          {
+            "x": 3,
+            "y": 2
+          },
+          {
+            "x": 3,
+            "y": 1
+          },
+          {
+            "x": 0,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_rayy",
+        "color": 3,
+        "points": [
+          {
+            "x": 7,
+            "y": 11
+          },
+          {
+            "x": 0,
+            "y": 11
+          },
+          {
+            "x": 0,
+            "y": 2
+          }
+        ]
+      },
+      {
+        "id": "arrow_rjs8",
+        "color": 4,
+        "points": [
+          {
+            "x": 4,
+            "y": 5
+          },
+          {
+            "x": 2,
+            "y": 5
+          },
+          {
+            "x": 2,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 10
+          }
+        ]
+      },
+      {
+        "id": "arrow_rs5c",
+        "color": 2,
+        "points": [
+          {
+            "x": 2,
+            "y": 6
+          },
+          {
+            "x": 3,
+            "y": 6
+          },
+          {
+            "x": 3,
+            "y": 3
+          }
+        ]
+      },
+      {
+        "id": "arrow_t9dk",
+        "color": 4,
+        "points": [
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 6
+          },
+          {
+            "x": 7,
+            "y": 6
+          },
+          {
+            "x": 7,
+            "y": 9
+          }
+        ]
+      },
+      {
+        "id": "arrow_tdyz",
+        "color": 0,
+        "points": [
+          {
+            "x": 6,
+            "y": 7
+          },
+          {
+            "x": 2,
+            "y": 7
+          },
+          {
+            "x": 2,
+            "y": 10
+          },
+          {
+            "x": 6,
+            "y": 10
+          }
+        ]
+      },
+      {
+        "id": "arrow_tkws",
+        "color": 1,
+        "points": [
+          {
+            "x": 6,
+            "y": 9
+          },
+          {
+            "x": 3,
+            "y": 9
+          },
+          {
+            "x": 3,
+            "y": 8
+          },
+          {
+            "x": 4,
+            "y": 8
+          },
+          {
+            "x": 4,
+            "y": 6
+          },
+          {
+            "x": 5,
+            "y": 6
+          },
+          {
+            "x": 5,
+            "y": 8
+          },
+          {
+            "x": 6,
+            "y": 8
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "level_mtx2v737",
+    "name": "Level 14",
+    "gridSize": {
+      "width": 12,
+      "height": 12
+    },
+    "arrows": [
+      {
+        "id": "arrow_wcfb",
+        "color": 0,
+        "points": [
+          {
+            "x": 11,
+            "y": 4
+          },
+          {
+            "x": 11,
+            "y": 2
+          },
+          {
+            "x": 0,
+            "y": 2
+          },
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 11,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "id": "arrow_wuo2",
+        "color": 1,
+        "points": [
+          {
+            "x": 1,
+            "y": 1
+          },
+          {
+            "x": 1,
+            "y": 3
+          },
+          {
+            "x": 0,
+            "y": 3
+          },
+          {
+            "x": 0,
+            "y": 8
+          }
+        ]
+      },
+      {
+        "id": "arrow_x2wl",
+        "color": 4,
+        "points": [
+          {
+            "x": 10,
+            "y": 3
+          },
+          {
+            "x": 2,
+            "y": 3
+          },
+          {
+            "x": 2,
+            "y": 1
+          },
+          {
+            "x": 11,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_xa2s",
+        "color": 4,
+        "points": [
+          {
+            "x": 1,
+            "y": 8
+          },
+          {
+            "x": 1,
+            "y": 4
+          },
+          {
+            "x": 10,
+            "y": 4
+          },
+          {
+            "x": 10,
+            "y": 8
+          }
+        ]
+      },
+      {
+        "id": "arrow_xf3a",
+        "color": 3,
+        "points": [
+          {
+            "x": 9,
+            "y": 5
+          },
+          {
+            "x": 2,
+            "y": 5
+          },
+          {
+            "x": 2,
+            "y": 7
+          },
+          {
+            "x": 11,
+            "y": 7
+          },
+          {
+            "x": 11,
+            "y": 5
+          }
+        ]
+      },
+      {
+        "id": "arrow_xpoh",
+        "color": 1,
+        "points": [
+          {
+            "x": 8,
+            "y": 6
+          },
+          {
+            "x": 9,
+            "y": 6
+          }
+        ]
+      },
+      {
+        "id": "arrow_xul5",
+        "color": 2,
+        "points": [
+          {
+            "x": 7,
+            "y": 6
+          },
+          {
+            "x": 3,
+            "y": 6
+          }
+        ]
+      },
+      {
+        "id": "arrow_yfvc",
+        "color": 3,
+        "points": [
+          {
+            "x": 0,
+            "y": 11
+          },
+          {
+            "x": 11,
+            "y": 11
+          }
+        ]
+      },
+      {
+        "id": "arrow_yly5",
+        "color": 1,
+        "points": [
+          {
+            "x": 5,
+            "y": 9
+          },
+          {
+            "x": 11,
+            "y": 9
+          },
+          {
+            "x": 11,
+            "y": 10
+          },
+          {
+            "x": 0,
+            "y": 10
+          }
+        ]
+      },
+      {
+        "id": "arrow_zaai",
+        "color": 2,
+        "points": [
+          {
+            "x": 9,
+            "y": 8
+          },
+          {
+            "x": 4,
+            "y": 8
+          },
+          {
+            "x": 4,
+            "y": 9
+          },
+          {
+            "x": 3,
+            "y": 9
+          },
+          {
+            "x": 3,
+            "y": 8
+          },
+          {
+            "x": 2,
+            "y": 8
+          },
+          {
+            "x": 2,
+            "y": 9
+          },
+          {
+            "x": 0,
+            "y": 9
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "level_mtx41bq0",
+    "name": "Level 15",
+    "gridSize": {
+      "width": 12,
+      "height": 12
+    },
+    "arrows": [
+      {
+        "id": "arrow_mp8k",
+        "color": 0,
+        "points": [
+          {
+            "x": 11,
+            "y": 0
+          },
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 0,
+            "y": 5
+          },
+          {
+            "x": 11,
+            "y": 5
+          }
+        ]
+      },
+      {
+        "id": "arrow_n1my",
+        "color": 1,
+        "points": [
+          {
+            "x": 0,
+            "y": 11
+          },
+          {
+            "x": 11,
+            "y": 11
+          },
+          {
+            "x": 11,
+            "y": 6
+          },
+          {
+            "x": 0,
+            "y": 6
+          }
+        ]
+      },
+      {
+        "id": "arrow_nhmg",
+        "color": 1,
+        "points": [
+          {
+            "x": 2,
+            "y": 3
+          },
+          {
+            "x": 5,
+            "y": 3
+          },
+          {
+            "x": 5,
+            "y": 1
+          },
+          {
+            "x": 1,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_nk3a",
+        "color": 2,
+        "points": [
+          {
+            "x": 1,
+            "y": 4
+          },
+          {
+            "x": 1,
+            "y": 2
+          },
+          {
+            "x": 4,
+            "y": 2
+          }
+        ]
+      },
+      {
+        "id": "arrow_nswg",
+        "color": 4,
+        "points": [
+          {
+            "x": 2,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_o8ym",
+        "color": 2,
+        "points": [
+          {
+            "x": 11,
+            "y": 1
+          },
+          {
+            "x": 7,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_oouc",
+        "color": 1,
+        "points": [
+          {
+            "x": 11,
+            "y": 4
+          },
+          {
+            "x": 7,
+            "y": 4
+          }
+        ]
+      },
+      {
+        "id": "arrow_p7xa",
+        "color": 4,
+        "points": [
+          {
+            "x": 8,
+            "y": 2
+          },
+          {
+            "x": 11,
+            "y": 2
+          }
+        ]
+      },
+      {
+        "id": "arrow_pepq",
+        "color": 3,
+        "points": [
+          {
+            "x": 11,
+            "y": 3
+          },
+          {
+            "x": 7,
+            "y": 3
+          },
+          {
+            "x": 7,
+            "y": 2
+          }
+        ]
+      },
+      {
+        "id": "arrow_ppn4",
+        "color": 0,
+        "points": [
+          {
+            "x": 2,
+            "y": 8
+          },
+          {
+            "x": 2,
+            "y": 10
+          },
+          {
+            "x": 0,
+            "y": 10
+          },
+          {
+            "x": 0,
+            "y": 7
+          }
+        ]
+      },
+      {
+        "id": "arrow_q29j",
+        "color": 3,
+        "points": [
+          {
+            "x": 6,
+            "y": 10
+          },
+          {
+            "x": 3,
+            "y": 10
+          },
+          {
+            "x": 3,
+            "y": 7
+          },
+          {
+            "x": 1,
+            "y": 7
+          },
+          {
+            "x": 1,
+            "y": 9
+          }
+        ]
+      },
+      {
+        "id": "arrow_q662",
+        "color": 4,
+        "points": [
+          {
+            "x": 4,
+            "y": 7
+          },
+          {
+            "x": 4,
+            "y": 9
+          },
+          {
+            "x": 7,
+            "y": 9
+          },
+          {
+            "x": 7,
+            "y": 10
+          }
+        ]
+      },
+      {
+        "id": "arrow_q8zp",
+        "color": 3,
+        "points": [
+          {
+            "x": 10,
+            "y": 7
+          },
+          {
+            "x": 10,
+            "y": 10
+          },
+          {
+            "x": 8,
+            "y": 10
+          }
+        ]
+      },
+      {
+        "id": "arrow_qcxw",
+        "color": 0,
+        "points": [
+          {
+            "x": 9,
+            "y": 9
+          },
+          {
+            "x": 8,
+            "y": 9
+          },
+          {
+            "x": 8,
+            "y": 8
+          }
+        ]
+      },
+      {
+        "id": "arrow_qyfy",
+        "color": 2,
+        "points": [
+          {
+            "x": 9,
+            "y": 8
+          },
+          {
+            "x": 9,
+            "y": 7
+          },
+          {
+            "x": 7,
+            "y": 7
+          },
+          {
+            "x": 7,
+            "y": 8
+          },
+          {
+            "x": 6,
+            "y": 8
+          },
+          {
+            "x": 6,
+            "y": 7
+          },
+          {
+            "x": 5,
+            "y": 7
+          },
+          {
+            "x": 5,
+            "y": 8
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "level_mtx724nh",
+    "name": "Level 16",
+    "gridSize": {
+      "width": 12,
+      "height": 12
+    },
+    "arrows": [
+      {
+        "id": "arrow_a45k",
+        "color": 0,
+        "points": [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 2,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "id": "arrow_a7yy",
+        "color": 4,
+        "points": [
+          {
+            "x": 3,
+            "y": 2
+          },
+          {
+            "x": 0,
+            "y": 2
+          }
+        ]
+      },
+      {
+        "id": "arrow_ajuu",
+        "color": 1,
+        "points": [
+          {
+            "x": 4,
+            "y": 3
+          },
+          {
+            "x": 4,
+            "y": 2
+          },
+          {
+            "x": 5,
+            "y": 2
+          },
+          {
+            "x": 5,
+            "y": 0
+          },
+          {
+            "x": 4,
+            "y": 0
+          },
+          {
+            "x": 4,
+            "y": 1
+          },
+          {
+            "x": 0,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_ax88",
+        "color": 3,
+        "points": [
+          {
+            "x": 0,
+            "y": 8
+          },
+          {
+            "x": 0,
+            "y": 7
+          },
+          {
+            "x": 1,
+            "y": 7
+          },
+          {
+            "x": 1,
+            "y": 6
+          },
+          {
+            "x": 0,
+            "y": 6
+          },
+          {
+            "x": 0,
+            "y": 3
+          },
+          {
+            "x": 2,
+            "y": 3
+          },
+          {
+            "x": 2,
+            "y": 4
+          },
+          {
+            "x": 3,
+            "y": 4
+          },
+          {
+            "x": 3,
+            "y": 3
+          }
+        ]
+      },
+      {
+        "id": "arrow_azts",
+        "color": 0,
+        "points": [
+          {
+            "x": 2,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 5
+          },
+          {
+            "x": 1,
+            "y": 5
+          }
+        ]
+      },
+      {
+        "id": "arrow_b5p1",
+        "color": 0,
+        "points": [
+          {
+            "x": 2,
+            "y": 11
+          },
+          {
+            "x": 2,
+            "y": 9
+          },
+          {
+            "x": 1,
+            "y": 9
+          }
+        ]
+      },
+      {
+        "id": "arrow_b7z5",
+        "color": 1,
+        "points": [
+          {
+            "x": 0,
+            "y": 11
+          },
+          {
+            "x": 0,
+            "y": 10
+          },
+          {
+            "x": 1,
+            "y": 10
+          },
+          {
+            "x": 1,
+            "y": 11
+          }
+        ]
+      },
+      {
+        "id": "arrow_bdrx",
+        "color": 5,
+        "points": [
+          {
+            "x": 5,
+            "y": 9
+          },
+          {
+            "x": 5,
+            "y": 10
+          },
+          {
+            "x": 4,
+            "y": 10
+          },
+          {
+            "x": 4,
+            "y": 11
+          }
+        ]
+      },
+      {
+        "id": "arrow_bkck",
+        "color": 2,
+        "points": [
+          {
+            "x": 1,
+            "y": 8
+          },
+          {
+            "x": 2,
+            "y": 8
+          },
+          {
+            "x": 2,
+            "y": 7
+          },
+          {
+            "x": 3,
+            "y": 7
+          },
+          {
+            "x": 3,
+            "y": 8
+          }
+        ]
+      },
+      {
+        "id": "arrow_bu9b",
+        "color": 0,
+        "points": [
+          {
+            "x": 7,
+            "y": 5
+          },
+          {
+            "x": 7,
+            "y": 3
+          },
+          {
+            "x": 8,
+            "y": 3
+          },
+          {
+            "x": 8,
+            "y": 2
+          },
+          {
+            "x": 9,
+            "y": 2
+          },
+          {
+            "x": 9,
+            "y": 3
+          },
+          {
+            "x": 10,
+            "y": 3
+          },
+          {
+            "x": 10,
+            "y": 1
+          },
+          {
+            "x": 9,
+            "y": 1
+          },
+          {
+            "x": 9,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "id": "arrow_c22a",
+        "color": 2,
+        "points": [
+          {
+            "x": 8,
+            "y": 4
+          },
+          {
+            "x": 8,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 6
+          },
+          {
+            "x": 10,
+            "y": 6
+          },
+          {
+            "x": 10,
+            "y": 4
+          },
+          {
+            "x": 11,
+            "y": 4
+          },
+          {
+            "x": 11,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_c45z",
+        "color": 0,
+        "points": [
+          {
+            "x": 11,
+            "y": 6
+          },
+          {
+            "x": 11,
+            "y": 5
+          }
+        ]
+      },
+      {
+        "id": "arrow_c7tx",
+        "color": 4,
+        "points": [
+          {
+            "x": 11,
+            "y": 9
+          },
+          {
+            "x": 10,
+            "y": 9
+          },
+          {
+            "x": 10,
+            "y": 8
+          },
+          {
+            "x": 11,
+            "y": 8
+          },
+          {
+            "x": 11,
+            "y": 7
+          },
+          {
+            "x": 10,
+            "y": 7
+          }
+        ]
+      },
+      {
+        "id": "arrow_cjf5",
+        "color": 0,
+        "points": [
+          {
+            "x": 6,
+            "y": 9
+          },
+          {
+            "x": 7,
+            "y": 9
+          },
+          {
+            "x": 7,
+            "y": 10
+          },
+          {
+            "x": 6,
+            "y": 10
+          },
+          {
+            "x": 6,
+            "y": 11
+          },
+          {
+            "x": 9,
+            "y": 11
+          },
+          {
+            "x": 9,
+            "y": 10
+          },
+          {
+            "x": 10,
+            "y": 10
+          },
+          {
+            "x": 10,
+            "y": 11
+          },
+          {
+            "x": 11,
+            "y": 11
+          },
+          {
+            "x": 11,
+            "y": 10
+          }
+        ]
+      },
+      {
+        "id": "arrow_cm0c",
+        "color": 1,
+        "points": [
+          {
+            "x": 7,
+            "y": 8
+          },
+          {
+            "x": 8,
+            "y": 8
+          },
+          {
+            "x": 8,
+            "y": 10
+          }
+        ]
+      },
+      {
+        "id": "arrow_cn3f",
+        "color": 3,
+        "points": [
+          {
+            "x": 9,
+            "y": 9
+          },
+          {
+            "x": 9,
+            "y": 7
+          }
+        ]
+      },
+      {
+        "id": "arrow_cvxx",
+        "color": 4,
+        "points": [
+          {
+            "x": 3,
+            "y": 11
+          },
+          {
+            "x": 3,
+            "y": 9
+          },
+          {
+            "x": 4,
+            "y": 9
+          },
+          {
+            "x": 4,
+            "y": 7
+          },
+          {
+            "x": 5,
+            "y": 7
+          },
+          {
+            "x": 5,
+            "y": 8
+          },
+          {
+            "x": 6,
+            "y": 8
+          },
+          {
+            "x": 6,
+            "y": 7
+          },
+          {
+            "x": 8,
+            "y": 7
+          },
+          {
+            "x": 8,
+            "y": 6
+          }
+        ]
+      },
+      {
+        "id": "arrow_d2i4",
+        "color": 2,
+        "points": [
+          {
+            "x": 5,
+            "y": 5
+          },
+          {
+            "x": 3,
+            "y": 5
+          },
+          {
+            "x": 3,
+            "y": 6
+          },
+          {
+            "x": 7,
+            "y": 6
+          }
+        ]
+      },
+      {
+        "id": "arrow_d3d5",
+        "color": 1,
+        "points": [
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 5
+          }
+        ]
+      },
+      {
+        "id": "arrow_dak4",
+        "color": 5,
+        "points": [
+          {
+            "x": 8,
+            "y": 1
+          },
+          {
+            "x": 8,
+            "y": 0
+          },
+          {
+            "x": 6,
+            "y": 0
+          },
+          {
+            "x": 6,
+            "y": 1
+          },
+          {
+            "x": 7,
+            "y": 1
+          },
+          {
+            "x": 7,
+            "y": 2
+          },
+          {
+            "x": 6,
+            "y": 2
+          },
+          {
+            "x": 6,
+            "y": 3
+          },
+          {
+            "x": 5,
+            "y": 3
+          },
+          {
+            "x": 5,
+            "y": 4
+          },
+          {
+            "x": 4,
+            "y": 4
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "level_mtx7ezik",
+    "name": "Level 17",
+    "gridSize": {
+      "width": 10,
+      "height": 10
+    },
+    "arrows": [
+      {
+        "id": "arrow_nzh8",
+        "color": 0,
+        "points": [
+          {
+            "x": 9,
+            "y": 0
+          },
+          {
+            "x": 9,
+            "y": 9
+          },
+          {
+            "x": 0,
+            "y": 9
+          },
+          {
+            "x": 0,
+            "y": 0
+          }
+        ],
+        "isDoubleHeaded": true
+      },
+      {
+        "id": "arrow_o49o",
+        "color": 3,
+        "points": [
+          {
+            "x": 8,
+            "y": 0
+          },
+          {
+            "x": 1,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "id": "arrow_oo6m",
+        "color": 4,
+        "points": [
+          {
+            "x": 8,
+            "y": 8
+          },
+          {
+            "x": 8,
+            "y": 1
+          },
+          {
+            "x": 1,
+            "y": 1
+          },
+          {
+            "x": 1,
+            "y": 8
+          }
+        ],
+        "isDoubleHeaded": true
+      },
+      {
+        "id": "arrow_oui4",
+        "color": 1,
+        "points": [
+          {
+            "x": 3,
+            "y": 4
+          },
+          {
+            "x": 5,
+            "y": 4
+          },
+          {
+            "x": 5,
+            "y": 2
+          },
+          {
+            "x": 2,
+            "y": 2
+          }
+        ]
+      },
+      {
+        "id": "arrow_ow78",
+        "color": 2,
+        "points": [
+          {
+            "x": 2,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 3
+          },
+          {
+            "x": 4,
+            "y": 3
+          }
+        ]
+      },
+      {
+        "id": "arrow_p4hq",
+        "color": 5,
+        "points": [
+          {
+            "x": 3,
+            "y": 5
+          },
+          {
+            "x": 6,
+            "y": 5
+          },
+          {
+            "x": 6,
+            "y": 2
+          },
+          {
+            "x": 7,
+            "y": 2
+          }
+        ]
+      },
+      {
+        "id": "arrow_p94z",
+        "color": 3,
+        "points": [
+          {
+            "x": 2,
+            "y": 8
+          },
+          {
+            "x": 2,
+            "y": 7
+          },
+          {
+            "x": 3,
+            "y": 7
+          },
+          {
+            "x": 3,
+            "y": 6
+          },
+          {
+            "x": 7,
+            "y": 6
+          },
+          {
+            "x": 7,
+            "y": 3
+          }
+        ]
+      },
+      {
+        "id": "arrow_perj",
+        "color": 1,
+        "points": [
+          {
+            "x": 7,
+            "y": 8
+          },
+          {
+            "x": 7,
+            "y": 7
+          },
+          {
+            "x": 6,
+            "y": 7
+          },
+          {
+            "x": 6,
+            "y": 8
+          },
+          {
+            "x": 5,
+            "y": 8
+          },
+          {
+            "x": 5,
+            "y": 7
+          },
+          {
+            "x": 4,
+            "y": 7
+          },
+          {
+            "x": 4,
+            "y": 8
+          },
+          {
+            "x": 3,
+            "y": 8
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "level_mtx7snp0",
+    "name": "Level 18",
+    "gridSize": {
+      "width": 11,
+      "height": 11
+    },
+    "arrows": [
+      {
+        "id": "arrow_t7bc",
+        "color": 2,
+        "points": [
+          {
+            "x": 1,
+            "y": 2
+          },
+          {
+            "x": 9,
+            "y": 2
+          },
+          {
+            "x": 9,
+            "y": 1
+          },
+          {
+            "x": 1,
+            "y": 1
+          },
+          {
+            "x": 1,
+            "y": 0
+          },
+          {
+            "x": 9,
+            "y": 0
+          }
+        ],
+        "isDoubleHeaded": true
+      },
+      {
+        "id": "arrow_tfkl",
+        "color": 0,
+        "points": [
+          {
+            "x": 8,
+            "y": 7
+          },
+          {
+            "x": 8,
+            "y": 4
+          },
+          {
+            "x": 10,
+            "y": 4
+          },
+          {
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "id": "arrow_tna4",
+        "color": 0,
+        "points": [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 0,
+            "y": 3
+          },
+          {
+            "x": 9,
+            "y": 3
+          }
+        ]
+      },
+      {
+        "id": "arrow_u69s",
+        "color": 1,
+        "points": [
+          {
+            "x": 0,
+            "y": 4
+          },
+          {
+            "x": 7,
+            "y": 4
+          }
+        ]
+      },
+      {
+        "id": "arrow_uicy",
+        "color": 3,
+        "points": [
+          {
+            "x": 3,
+            "y": 7
+          },
+          {
+            "x": 3,
+            "y": 5
+          },
+          {
+            "x": 1,
+            "y": 5
+          },
+          {
+            "x": 1,
+            "y": 6
+          }
+        ]
+      },
+      {
+        "id": "arrow_vdq0",
+        "color": 5,
+        "points": [
+          {
+            "x": 10,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 8
+          },
+          {
+            "x": 7,
+            "y": 8
+          },
+          {
+            "x": 7,
+            "y": 5
+          }
+        ]
+      },
+      {
+        "id": "arrow_vrod",
+        "color": 1,
+        "points": [
+          {
+            "x": 4,
+            "y": 9
+          },
+          {
+            "x": 5,
+            "y": 9
+          },
+          {
+            "x": 5,
+            "y": 8
+          },
+          {
+            "x": 6,
+            "y": 8
+          },
+          {
+            "x": 6,
+            "y": 5
+          }
+        ]
+      },
+      {
+        "id": "arrow_vuc2",
+        "color": 4,
+        "points": [
+          {
+            "x": 5,
+            "y": 7
+          },
+          {
+            "x": 5,
+            "y": 5
+          },
+          {
+            "x": 4,
+            "y": 5
+          },
+          {
+            "x": 4,
+            "y": 7
+          }
+        ]
+      },
+      {
+        "id": "arrow_yi9f",
+        "color": 2,
+        "points": [
+          {
+            "x": 0,
+            "y": 5
+          },
+          {
+            "x": 0,
+            "y": 10
+          },
+          {
+            "x": 10,
+            "y": 10
+          },
+          {
+            "x": 10,
+            "y": 6
+          }
+        ],
+        "isDoubleHeaded": true
+      },
+      {
+        "id": "arrow_yqq8",
+        "color": 3,
+        "points": [
+          {
+            "x": 6,
+            "y": 9
+          },
+          {
+            "x": 9,
+            "y": 9
+          }
+        ]
+      },
+      {
+        "id": "arrow_yy9y",
+        "color": 4,
+        "points": [
+          {
+            "x": 2,
+            "y": 8
+          },
+          {
+            "x": 2,
+            "y": 6
+          }
+        ]
+      },
+      {
+        "id": "arrow_z456",
+        "color": 0,
+        "points": [
+          {
+            "x": 1,
+            "y": 7
+          },
+          {
+            "x": 1,
+            "y": 9
+          },
+          {
+            "x": 3,
+            "y": 9
+          },
+          {
+            "x": 3,
+            "y": 8
+          },
+          {
+            "x": 4,
+            "y": 8
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "level_mtymaq45",
+    "name": "Level 19",
+    "gridSize": {
+      "width": 12,
+      "height": 12
+    },
+    "arrows": [
+      {
+        "id": "arrow_bf9o",
+        "color": 0,
+        "points": [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 2,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "id": "arrow_bhwc",
+        "color": 2,
+        "points": [
+          {
+            "x": 3,
+            "y": 2
+          },
+          {
+            "x": 0,
+            "y": 2
+          }
+        ]
+      },
+      {
+        "id": "arrow_bolj",
+        "color": 3,
+        "points": [
+          {
+            "x": 4,
+            "y": 3
+          },
+          {
+            "x": 4,
+            "y": 2
+          },
+          {
+            "x": 5,
+            "y": 2
+          },
+          {
+            "x": 5,
+            "y": 0
+          },
+          {
+            "x": 4,
+            "y": 0
+          },
+          {
+            "x": 4,
+            "y": 1
+          },
+          {
+            "x": 0,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_c7b9",
+        "color": 4,
+        "points": [
+          {
+            "x": 0,
+            "y": 8
+          },
+          {
+            "x": 0,
+            "y": 7
+          },
+          {
+            "x": 1,
+            "y": 7
+          },
+          {
+            "x": 1,
+            "y": 6
+          },
+          {
+            "x": 0,
+            "y": 6
+          },
+          {
+            "x": 0,
+            "y": 3
+          },
+          {
+            "x": 2,
+            "y": 3
+          },
+          {
+            "x": 2,
+            "y": 4
+          },
+          {
+            "x": 3,
+            "y": 4
+          },
+          {
+            "x": 3,
+            "y": 3
+          }
+        ]
+      },
+      {
+        "id": "arrow_ca2q",
+        "color": 0,
+        "points": [
+          {
+            "x": 2,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 5
+          },
+          {
+            "x": 1,
+            "y": 5
+          }
+        ]
+      },
+      {
+        "id": "arrow_cdiw",
+        "color": 0,
+        "points": [
+          {
+            "x": 1,
+            "y": 8
+          },
+          {
+            "x": 2,
+            "y": 8
+          },
+          {
+            "x": 2,
+            "y": 7
+          },
+          {
+            "x": 3,
+            "y": 7
+          },
+          {
+            "x": 3,
+            "y": 8
+          }
+        ]
+      },
+      {
+        "id": "arrow_chjr",
+        "color": 2,
+        "points": [
+          {
+            "x": 2,
+            "y": 11
+          },
+          {
+            "x": 2,
+            "y": 9
+          },
+          {
+            "x": 1,
+            "y": 9
+          }
+        ]
+      },
+      {
+        "id": "arrow_cj48",
+        "color": 0,
+        "points": [
+          {
+            "x": 0,
+            "y": 11
+          },
+          {
+            "x": 0,
+            "y": 10
+          },
+          {
+            "x": 1,
+            "y": 10
+          },
+          {
+            "x": 1,
+            "y": 11
+          }
+        ]
+      },
+      {
+        "id": "arrow_cudg",
+        "color": 0,
+        "points": [
+          {
+            "x": 8,
+            "y": 1
+          },
+          {
+            "x": 8,
+            "y": 0
+          },
+          {
+            "x": 6,
+            "y": 0
+          },
+          {
+            "x": 6,
+            "y": 1
+          },
+          {
+            "x": 7,
+            "y": 1
+          },
+          {
+            "x": 7,
+            "y": 2
+          },
+          {
+            "x": 6,
+            "y": 2
+          },
+          {
+            "x": 6,
+            "y": 3
+          },
+          {
+            "x": 5,
+            "y": 3
+          },
+          {
+            "x": 5,
+            "y": 4
+          },
+          {
+            "x": 4,
+            "y": 4
+          }
+        ]
+      },
+      {
+        "id": "arrow_d43e",
+        "color": 2,
+        "points": [
+          {
+            "x": 7,
+            "y": 5
+          },
+          {
+            "x": 7,
+            "y": 3
+          },
+          {
+            "x": 8,
+            "y": 3
+          },
+          {
+            "x": 8,
+            "y": 2
+          },
+          {
+            "x": 9,
+            "y": 2
+          },
+          {
+            "x": 9,
+            "y": 3
+          },
+          {
+            "x": 10,
+            "y": 3
+          },
+          {
+            "x": 10,
+            "y": 1
+          },
+          {
+            "x": 9,
+            "y": 1
+          },
+          {
+            "x": 9,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "id": "arrow_dccx",
+        "color": 4,
+        "points": [
+          {
+            "x": 9,
+            "y": 4
+          },
+          {
+            "x": 8,
+            "y": 4
+          },
+          {
+            "x": 8,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 6
+          },
+          {
+            "x": 10,
+            "y": 6
+          },
+          {
+            "x": 10,
+            "y": 4
+          },
+          {
+            "x": 11,
+            "y": 4
+          },
+          {
+            "x": 11,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_ddxe",
+        "color": 3,
+        "points": [
+          {
+            "x": 11,
+            "y": 6
+          },
+          {
+            "x": 11,
+            "y": 5
+          }
+        ]
+      },
+      {
+        "id": "arrow_dhsw",
+        "color": 2,
+        "points": [
+          {
+            "x": 11,
+            "y": 9
+          },
+          {
+            "x": 10,
+            "y": 9
+          },
+          {
+            "x": 10,
+            "y": 8
+          },
+          {
+            "x": 11,
+            "y": 8
+          },
+          {
+            "x": 11,
+            "y": 7
+          },
+          {
+            "x": 10,
+            "y": 7
+          }
+        ]
+      },
+      {
+        "id": "arrow_drqi",
+        "color": 3,
+        "points": [
+          {
+            "x": 6,
+            "y": 9
+          },
+          {
+            "x": 7,
+            "y": 9
+          },
+          {
+            "x": 7,
+            "y": 10
+          },
+          {
+            "x": 6,
+            "y": 10
+          },
+          {
+            "x": 6,
+            "y": 11
+          },
+          {
+            "x": 9,
+            "y": 11
+          },
+          {
+            "x": 9,
+            "y": 10
+          },
+          {
+            "x": 10,
+            "y": 10
+          },
+          {
+            "x": 10,
+            "y": 11
+          },
+          {
+            "x": 11,
+            "y": 11
+          },
+          {
+            "x": 11,
+            "y": 10
+          }
+        ]
+      },
+      {
+        "id": "arrow_du2p",
+        "color": 0,
+        "points": [
+          {
+            "x": 7,
+            "y": 8
+          },
+          {
+            "x": 8,
+            "y": 8
+          },
+          {
+            "x": 8,
+            "y": 10
+          }
+        ]
+      },
+      {
+        "id": "arrow_dvus",
+        "color": 0,
+        "points": [
+          {
+            "x": 9,
+            "y": 9
+          },
+          {
+            "x": 9,
+            "y": 7
+          }
+        ]
+      },
+      {
+        "id": "arrow_e5se",
+        "color": 1,
+        "points": [
+          {
+            "x": 3,
+            "y": 11
+          },
+          {
+            "x": 3,
+            "y": 9
+          },
+          {
+            "x": 4,
+            "y": 9
+          },
+          {
+            "x": 4,
+            "y": 7
+          },
+          {
+            "x": 5,
+            "y": 7
+          },
+          {
+            "x": 5,
+            "y": 8
+          },
+          {
+            "x": 6,
+            "y": 8
+          },
+          {
+            "x": 6,
+            "y": 7
+          },
+          {
+            "x": 8,
+            "y": 7
+          },
+          {
+            "x": 8,
+            "y": 6
+          }
+        ]
+      },
+      {
+        "id": "arrow_e846",
+        "color": 0,
+        "points": [
+          {
+            "x": 5,
+            "y": 9
+          },
+          {
+            "x": 5,
+            "y": 10
+          },
+          {
+            "x": 4,
+            "y": 10
+          },
+          {
+            "x": 4,
+            "y": 11
+          }
+        ]
+      },
+      {
+        "id": "arrow_edrw",
+        "color": 3,
+        "points": [
+          {
+            "x": 5,
+            "y": 5
+          },
+          {
+            "x": 3,
+            "y": 5
+          },
+          {
+            "x": 3,
+            "y": 6
+          },
+          {
+            "x": 7,
+            "y": 6
+          }
+        ]
+      },
+      {
+        "id": "arrow_eey5",
+        "color": 1,
+        "points": [
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 5
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "level_mtymft3b",
+    "name": "Level 20",
+    "gridSize": {
+      "width": 22,
+      "height": 22
+    },
+    "arrows": [
+      {
+        "id": "arrow_g4e1",
+        "color": 1,
+        "points": [
+          {
+            "x": 1,
+            "y": 1
+          },
+          {
+            "x": 1,
+            "y": 2
+          },
+          {
+            "x": 2,
+            "y": 2
+          },
+          {
+            "x": 2,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_i1aw",
+        "color": 1,
+        "points": [
+          {
+            "x": 1,
+            "y": 7
+          },
+          {
+            "x": 4,
+            "y": 7
+          },
+          {
+            "x": 4,
+            "y": 6
+          },
+          {
+            "x": 0,
+            "y": 6
+          },
+          {
+            "x": 0,
+            "y": 8
+          },
+          {
+            "x": 5,
+            "y": 8
+          },
+          {
+            "x": 5,
+            "y": 5
+          },
+          {
+            "x": 0,
+            "y": 5
+          }
+        ]
+      },
+      {
+        "id": "arrow_i8d9",
+        "color": 0,
+        "points": [
+          {
+            "x": 1,
+            "y": 3
+          },
+          {
+            "x": 3,
+            "y": 3
+          },
+          {
+            "x": 3,
+            "y": 0
+          },
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 0,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 8
+          }
+        ]
+      },
+      {
+        "id": "arrow_igwu",
+        "color": 0,
+        "points": [
+          {
+            "x": 14,
+            "y": 0
+          },
+          {
+            "x": 5,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "id": "arrow_kif5",
+        "color": 4,
+        "points": [
+          {
+            "x": 19,
+            "y": 3
+          },
+          {
+            "x": 21,
+            "y": 3
+          }
+        ]
+      },
+      {
+        "id": "arrow_mnju",
+        "color": 2,
+        "points": [
+          {
+            "x": 10,
+            "y": 2
+          },
+          {
+            "x": 5,
+            "y": 2
+          },
+          {
+            "x": 5,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "arrow_nlpl",
+        "color": 3,
+        "points": [
+          {
+            "x": 15,
+            "y": 0
+          },
+          {
+            "x": 21,
+            "y": 0
+          },
+          {
+            "x": 21,
+            "y": 1
+          },
+          {
+            "x": 6,
+            "y": 1
+          }
+        ],
+        "isDoubleHeaded": true
+      },
+      {
+        "id": "arrow_o2c1",
+        "color": 4,
+        "points": [
+          {
+            "x": 7,
+            "y": 5
+          },
+          {
+            "x": 7,
+            "y": 7
+          },
+          {
+            "x": 9,
+            "y": 7
+          },
+          {
+            "x": 9,
+            "y": 6
+          },
+          {
+            "x": 8,
+            "y": 6
+          },
+          {
+            "x": 8,
+            "y": 5
+          }
+        ]
+      },
+      {
+        "id": "arrow_o4m2",
+        "color": 2,
+        "points": [
+          {
+            "x": 11,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 5
+          }
+        ]
+      },
+      {
+        "id": "arrow_obai",
+        "color": 3,
+        "points": [
+          {
+            "x": 12,
+            "y": 5
+          },
+          {
+            "x": 12,
+            "y": 6
+          },
+          {
+            "x": 11,
+            "y": 6
+          },
+          {
+            "x": 11,
+            "y": 8
+          },
+          {
+            "x": 10,
+            "y": 8
+          },
+          {
+            "x": 10,
+            "y": 6
+          }
+        ]
+      },
+      {
+        "id": "arrow_octv",
+        "color": 4,
+        "points": [
+          {
+            "x": 12,
+            "y": 7
+          },
+          {
+            "x": 12,
+            "y": 8
+          }
+        ]
+      },
+      {
+        "id": "arrow_ogzh",
+        "color": 2,
+        "points": [
+          {
+            "x": 9,
+            "y": 8
+          },
+          {
+            "x": 7,
+            "y": 8
+          }
+        ]
+      },
+      {
+        "id": "arrow_ouo0",
+        "color": 2,
+        "points": [
+          {
+            "x": 3,
+            "y": 13
+          },
+          {
+            "x": 12,
+            "y": 13
+          },
+          {
+            "x": 12,
+            "y": 9
+          },
+          {
+            "x": 0,
+            "y": 9
+          }
+        ],
+        "isDoubleHeaded": true
+      },
+      {
+        "id": "arrow_owe4",
+        "color": 2,
+        "points": [
+          {
+            "x": 2,
+            "y": 13
+          },
+          {
+            "x": 0,
+            "y": 13
+          }
+        ]
+      },
+      {
+        "id": "arrow_p1bk",
+        "color": 3,
+        "points": [
+          {
+            "x": 2,
+            "y": 11
+          },
+          {
+            "x": 0,
+            "y": 11
+          },
+          {
+            "x": 0,
+            "y": 12
+          },
+          {
+            "x": 3,
+            "y": 12
+          },
+          {
+            "x": 3,
+            "y": 10
+          },
+          {
+            "x": 0,
+            "y": 10
+          }
+        ]
+      },
+      {
+        "id": "arrow_p691",
+        "color": 1,
+        "points": [
+          {
+            "x": 5,
+            "y": 10
+          },
+          {
+            "x": 4,
+            "y": 10
+          },
+          {
+            "x": 4,
+            "y": 12
+          },
+          {
+            "x": 5,
+            "y": 12
+          },
+          {
+            "x": 5,
+            "y": 11
+          },
+          {
+            "x": 6,
+            "y": 11
+          },
+          {
+            "x": 6,
+            "y": 12
+          }
+        ]
+      },
+      {
+        "id": "arrow_p809",
+        "color": 2,
+        "points": [
+          {
+            "x": 7,
+            "y": 10
+          },
+          {
+            "x": 6,
+            "y": 10
+          }
+        ]
+      },
+      {
+        "id": "arrow_pccd",
+        "color": 0,
+        "points": [
+          {
+            "x": 9,
+            "y": 10
+          },
+          {
+            "x": 8,
+            "y": 10
+          },
+          {
+            "x": 8,
+            "y": 11
+          },
+          {
+            "x": 9,
+            "y": 11
+          },
+          {
+            "x": 9,
+            "y": 12
+          },
+          {
+            "x": 7,
+            "y": 12
+          },
+          {
+            "x": 7,
+            "y": 11
+          }
+        ]
+      },
+      {
+        "id": "arrow_peft",
+        "color": 3,
+        "points": [
+          {
+            "x": 10,
+            "y": 10
+          },
+          {
+            "x": 10,
+            "y": 12
+          },
+          {
+            "x": 11,
+            "y": 12
+          },
+          {
+            "x": 11,
+            "y": 10
+          }
+        ]
+      },
+      {
+        "id": "arrow_px9c",
+        "color": 0,
+        "points": [
+          {
+            "x": 10,
+            "y": 14
+          },
+          {
+            "x": 15,
+            "y": 14
+          },
+          {
+            "x": 15,
+            "y": 13
+          },
+          {
+            "x": 13,
+            "y": 13
+          },
+          {
+            "x": 13,
+            "y": 4
+          },
+          {
+            "x": 7,
+            "y": 4
+          }
+        ],
+        "isDoubleHeaded": true
+      },
+      {
+        "id": "arrow_pzdl",
+        "color": 2,
+        "points": [
+          {
+            "x": 12,
+            "y": 3
+          },
+          {
+            "x": 13,
+            "y": 3
+          }
+        ]
+      },
+      {
+        "id": "arrow_qfao",
+        "color": 3,
+        "points": [
+          {
+            "x": 15,
+            "y": 11
+          },
+          {
+            "x": 21,
+            "y": 11
+          },
+          {
+            "x": 21,
+            "y": 12
+          },
+          {
+            "x": 14,
+            "y": 12
+          },
+          {
+            "x": 14,
+            "y": 10
+          },
+          {
+            "x": 21,
+            "y": 10
+          }
+        ]
+      },
+      {
+        "id": "arrow_qq73",
+        "color": 4,
+        "points": [
+          {
+            "x": 15,
+            "y": 9
+          },
+          {
+            "x": 14,
+            "y": 9
+          },
+          {
+            "x": 14,
+            "y": 2
+          },
+          {
+            "x": 11,
+            "y": 2
+          },
+          {
+            "x": 11,
+            "y": 3
+          },
+          {
+            "x": 4,
+            "y": 3
+          },
+          {
+            "x": 4,
+            "y": 0
+          }
+        ],
+        "isDoubleHeaded": true
+      },
+      {
+        "id": "arrow_qz3f",
+        "color": 1,
+        "points": [
+          {
+            "x": 16,
+            "y": 9
+          },
+          {
+            "x": 17,
+            "y": 9
+          },
+          {
+            "x": 17,
+            "y": 8
+          },
+          {
+            "x": 15,
+            "y": 8
+          },
+          {
+            "x": 15,
+            "y": 2
+          },
+          {
+            "x": 17,
+            "y": 2
+          }
+        ]
+      },
+      {
+        "id": "arrow_r64t",
+        "color": 0,
+        "points": [
+          {
+            "x": 17,
+            "y": 4
+          },
+          {
+            "x": 17,
+            "y": 7
+          },
+          {
+            "x": 16,
+            "y": 7
+          },
+          {
+            "x": 16,
+            "y": 3
+          },
+          {
+            "x": 18,
+            "y": 3
+          },
+          {
+            "x": 18,
+            "y": 2
+          },
+          {
+            "x": 21,
+            "y": 2
+          }
+        ]
+      },
+      {
+        "id": "arrow_rg96",
+        "color": 1,
+        "points": [
+          {
+            "x": 20,
+            "y": 7
+          },
+          {
+            "x": 20,
+            "y": 5
+          },
+          {
+            "x": 19,
+            "y": 5
+          },
+          {
+            "x": 19,
+            "y": 8
+          },
+          {
+            "x": 21,
+            "y": 8
+          },
+          {
+            "x": 21,
+            "y": 4
+          },
+          {
+            "x": 18,
+            "y": 4
+          },
+          {
+            "x": 18,
+            "y": 9
+          },
+          {
+            "x": 21,
+            "y": 9
+          }
+        ]
+      },
+      {
+        "id": "arrow_rsrp",
+        "color": 4,
+        "points": [
+          {
+            "x": 10,
+            "y": 15
+          },
+          {
+            "x": 15,
+            "y": 15
+          }
+        ],
+        "isDoubleHeaded": true
+      },
+      {
+        "id": "arrow_rxp7",
+        "color": 1,
+        "points": [
+          {
+            "x": 17,
+            "y": 14
+          },
+          {
+            "x": 21,
+            "y": 14
+          },
+          {
+            "x": 21,
+            "y": 15
+          },
+          {
+            "x": 16,
+            "y": 15
+          },
+          {
+            "x": 16,
+            "y": 13
+          },
+          {
+            "x": 21,
+            "y": 13
+          }
+        ]
+      },
+      {
+        "id": "arrow_s7rh",
+        "color": 0,
+        "points": [
+          {
+            "x": 21,
+            "y": 20
+          },
+          {
+            "x": 21,
+            "y": 21
+          }
+        ]
+      },
+      {
+        "id": "arrow_szkf",
+        "color": 0,
+        "points": [
+          {
+            "x": 4,
+            "y": 18
+          },
+          {
+            "x": 6,
+            "y": 18
+          },
+          {
+            "x": 6,
+            "y": 16
+          },
+          {
+            "x": 5,
+            "y": 16
+          },
+          {
+            "x": 5,
+            "y": 15
+          },
+          {
+            "x": 9,
+            "y": 15
+          },
+          {
+            "x": 9,
+            "y": 14
+          },
+          {
+            "x": 0,
+            "y": 14
+          }
+        ]
+      },
+      {
+        "id": "arrow_tcmc",
+        "color": 2,
+        "points": [
+          {
+            "x": 1,
+            "y": 20
+          },
+          {
+            "x": 1,
+            "y": 18
+          },
+          {
+            "x": 0,
+            "y": 18
+          },
+          {
+            "x": 0,
+            "y": 21
+          },
+          {
+            "x": 2,
+            "y": 21
+          },
+          {
+            "x": 2,
+            "y": 15
+          },
+          {
+            "x": 4,
+            "y": 15
+          },
+          {
+            "x": 4,
+            "y": 17
+          },
+          {
+            "x": 5,
+            "y": 17
+          }
+        ]
+      },
+      {
+        "id": "arrow_tg0c",
+        "color": 3,
+        "points": [
+          {
+            "x": 0,
+            "y": 16
+          },
+          {
+            "x": 0,
+            "y": 15
+          },
+          {
+            "x": 1,
+            "y": 15
+          },
+          {
+            "x": 1,
+            "y": 17
+          },
+          {
+            "x": 0,
+            "y": 17
+          }
+        ]
+      },
+      {
+        "id": "arrow_tl45",
+        "color": 4,
+        "points": [
+          {
+            "x": 3,
+            "y": 16
+          },
+          {
+            "x": 3,
+            "y": 18
+          }
+        ]
+      },
+      {
+        "id": "arrow_trwo",
+        "color": 0,
+        "points": [
+          {
+            "x": 4,
+            "y": 21
+          },
+          {
+            "x": 4,
+            "y": 20
+          },
+          {
+            "x": 5,
+            "y": 20
+          },
+          {
+            "x": 5,
+            "y": 21
+          },
+          {
+            "x": 6,
+            "y": 21
+          },
+          {
+            "x": 6,
+            "y": 19
+          },
+          {
+            "x": 3,
+            "y": 19
+          },
+          {
+            "x": 3,
+            "y": 20
+          }
+        ]
+      },
+      {
+        "id": "arrow_u035",
+        "color": 3,
+        "points": [
+          {
+            "x": 21,
+            "y": 19
+          },
+          {
+            "x": 21,
+            "y": 16
+          },
+          {
+            "x": 7,
+            "y": 16
+          },
+          {
+            "x": 7,
+            "y": 21
+          }
+        ],
+        "isDoubleHeaded": true
+      },
+      {
+        "id": "arrow_u7y2",
+        "color": 1,
+        "points": [
+          {
+            "x": 15,
+            "y": 21
+          },
+          {
+            "x": 20,
+            "y": 21
+          },
+          {
+            "x": 20,
+            "y": 17
+          },
+          {
+            "x": 8,
+            "y": 17
+          },
+          {
+            "x": 8,
+            "y": 21
+          }
+        ]
+      },
+      {
+        "id": "arrow_ufxf",
+        "color": 4,
+        "points": [
+          {
+            "x": 10,
+            "y": 19
+          },
+          {
+            "x": 10,
+            "y": 21
+          },
+          {
+            "x": 9,
+            "y": 21
+          },
+          {
+            "x": 9,
+            "y": 18
+          },
+          {
+            "x": 11,
+            "y": 18
+          },
+          {
+            "x": 11,
+            "y": 20
+          }
+        ]
+      },
+      {
+        "id": "arrow_ul87",
+        "color": 2,
+        "points": [
+          {
+            "x": 14,
+            "y": 20
+          },
+          {
+            "x": 14,
+            "y": 21
+          },
+          {
+            "x": 13,
+            "y": 21
+          },
+          {
+            "x": 13,
+            "y": 18
+          },
+          {
+            "x": 12,
+            "y": 18
+          },
+          {
+            "x": 12,
+            "y": 21
+          }
+        ]
+      },
+      {
+        "id": "arrow_upiq",
+        "color": 0,
+        "points": [
+          {
+            "x": 18,
+            "y": 19
+          },
+          {
+            "x": 15,
+            "y": 19
+          },
+          {
+            "x": 15,
+            "y": 20
+          },
+          {
+            "x": 19,
+            "y": 20
+          },
+          {
+            "x": 19,
+            "y": 18
+          },
+          {
+            "x": 14,
+            "y": 18
+          },
+          {
+            "x": 14,
+            "y": 19
+          }
+        ]
+      }
+    ]
+  }
 ];

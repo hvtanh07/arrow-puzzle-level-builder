@@ -25,8 +25,12 @@ interface CanvasEditorProps {
   showRays: boolean;
   showCoords: boolean;
   onPlayTest: () => void;
-  prebuildArea: SelectionArea | null;
-  onSelectPrebuildArea: (area: SelectionArea | null) => void;
+  prebuildAreas?: SelectionArea[];
+  prebuildArea?: SelectionArea | null;
+  onAddPrebuildArea?: (area: SelectionArea) => void;
+  onRemovePrebuildArea?: (idOrIndex: string | number) => void;
+  onClearPrebuildAreas?: () => void;
+  onSelectPrebuildArea?: (area: SelectionArea | null) => void;
   onTriggerPrebuild?: () => void;
   sourceLevelName?: string;
 }
@@ -43,11 +47,22 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
   showRays,
   showCoords,
   onPlayTest,
+  prebuildAreas = [],
   prebuildArea,
+  onAddPrebuildArea,
+  onRemovePrebuildArea,
+  onClearPrebuildAreas,
   onSelectPrebuildArea,
   onTriggerPrebuild,
   sourceLevelName,
 }) => {
+  const effectivePrebuildAreas: SelectionArea[] =
+    prebuildAreas.length > 0 ? prebuildAreas : prebuildArea ? [prebuildArea] : [];
+
+  const totalPrebuildCells = effectivePrebuildAreas.reduce(
+    (sum, a) => sum + (a.maxX - a.minX + 1) * (a.maxY - a.minY + 1),
+    0
+  );
   // Drawing state
   const [drawPoints, setDrawPoints] = useState<Point[]>([]);
   const [hoverGridPos, setHoverGridPos] = useState<Point | null>(null);
@@ -207,13 +222,39 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
         const maxX = Math.max(dragAreaStart.x, dragAreaCurrent.x);
         const minY = Math.min(dragAreaStart.y, dragAreaCurrent.y);
         const maxY = Math.max(dragAreaStart.y, dragAreaCurrent.y);
-        onSelectPrebuildArea({ minX, maxX, minY, maxY });
-        sound.playPop();
+        const w = maxX - minX + 1;
+        const h = maxY - minY + 1;
+
+        if (w >= 2 || h >= 2) {
+          const newArea: SelectionArea = {
+            id: `area_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+            minX,
+            maxX,
+            minY,
+            maxY,
+          };
+          if (onAddPrebuildArea) {
+            onAddPrebuildArea(newArea);
+          } else if (onSelectPrebuildArea) {
+            onSelectPrebuildArea(newArea);
+          }
+          sound.playPop();
+        }
       }
       setDragAreaStart(null);
       setDragAreaCurrent(null);
     }
-  }, [dragVertex, dragSegment, dragArrow, dragAreaStart, dragAreaCurrent, arrows, onChangeArrows, onSelectPrebuildArea]);
+  }, [
+    dragVertex,
+    dragSegment,
+    dragArrow,
+    dragAreaStart,
+    dragAreaCurrent,
+    arrows,
+    onChangeArrows,
+    onAddPrebuildArea,
+    onSelectPrebuildArea,
+  ]);
 
   // Global mouseup listener for clean drag release anywhere
   useEffect(() => {
@@ -232,15 +273,19 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
       } else if (e.key === 'Escape') {
         cancelDrawing();
         onSelectArrowId(null);
-        onSelectPrebuildArea(null);
+        if (onClearPrebuildAreas) {
+          onClearPrebuildAreas();
+        } else if (onSelectPrebuildArea) {
+          onSelectPrebuildArea(null);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [drawPoints, activeColorId, hoverGridPos, tool, onSelectPrebuildArea]);
+  }, [drawPoints, activeColorId, hoverGridPos, tool, onClearPrebuildAreas, onSelectPrebuildArea]);
 
-  // Active marked area (during active drag or committed prebuildArea)
-  const activeArea: SelectionArea | null =
+  // Active dragging area (while user is actively dragging the mouse on canvas)
+  const activeDragArea: SelectionArea | null =
     dragAreaStart && dragAreaCurrent
       ? {
           minX: Math.min(dragAreaStart.x, dragAreaCurrent.x),
@@ -248,7 +293,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
           minY: Math.min(dragAreaStart.y, dragAreaCurrent.y),
           maxY: Math.max(dragAreaStart.y, dragAreaCurrent.y),
         }
-      : prebuildArea;
+      : null;
 
   // Handle Arrow Mouse Down (Select mode: select ONLY, does NOT drag arrow)
   const handleArrowMouseDown = (arrow: Arrow, e: React.MouseEvent) => {
@@ -782,27 +827,31 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
             <span>
-              <b>Prebuild Mode:</b> Drag on canvas to mark area to fill with style from <b>{sourceLevelName || 'Previous Level'}</b>.
-              {activeArea && ` (Selected: ${activeArea.maxX - activeArea.minX + 1} × ${activeArea.maxY - activeArea.minY + 1} area)`}
+              <b>Prebuild Mode:</b> Drag on canvas to mark multiple areas to fill with style from <b>{sourceLevelName || 'Previous Level'}</b>.
+              {effectivePrebuildAreas.length > 0 && ` (${effectivePrebuildAreas.length} area${effectivePrebuildAreas.length > 1 ? 's' : ''} marked, ${totalPrebuildCells} cells)`}
             </span>
           </div>
           <div className="flex items-center gap-2">
-            {activeArea && onTriggerPrebuild && (
+            {effectivePrebuildAreas.length > 0 && onTriggerPrebuild && (
               <button
                 onClick={onTriggerPrebuild}
                 className="px-3 py-1 bg-white text-indigo-700 hover:bg-indigo-50 rounded-lg font-bold shadow-xs text-xs flex items-center gap-1.5 transition-all cursor-pointer"
               >
                 <Sparkles className="w-3.5 h-3.5 fill-indigo-600" />
-                Fill Area with Style
+                Fill {effectivePrebuildAreas.length > 1 ? `All ${effectivePrebuildAreas.length} Areas` : 'Area'} with Style
               </button>
             )}
-            {activeArea && (
+            {effectivePrebuildAreas.length > 0 && (
               <button
-                onClick={() => onSelectPrebuildArea(null)}
-                className="p-1 text-indigo-200 hover:text-white rounded-lg cursor-pointer"
-                title="Clear Area Selection (Esc)"
+                onClick={() => {
+                  if (onClearPrebuildAreas) onClearPrebuildAreas();
+                  else if (onSelectPrebuildArea) onSelectPrebuildArea(null);
+                }}
+                className="px-2 py-1 text-indigo-200 hover:text-white rounded-lg cursor-pointer flex items-center gap-1 text-[11px]"
+                title="Clear All Marked Areas (Esc)"
               >
                 <X className="w-4 h-4" />
+                <span>Clear All</span>
               </button>
             )}
           </div>
@@ -850,7 +899,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
           </span>
         ) : tool === 'prebuild' ? (
           <span>
-            <b>Prebuild Mode:</b> Drag box to mark area • Fills with previous level style
+            <b>Prebuild Mode:</b> Drag to mark multiple areas • Click <b>✕</b> to remove an area
           </span>
         ) : (
           <span>
@@ -928,70 +977,134 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
             {/* Grid Intersections / Dots (Perfect symmetric spacing) */}
             {Array.from({ length: gridSize.width }).map((_, col) =>
               Array.from({ length: gridSize.height }).map((_, row) => {
-                const inPrebuild =
-                  activeArea &&
-                  col >= activeArea.minX &&
-                  col <= activeArea.maxX &&
-                  row >= activeArea.minY &&
-                  row <= activeArea.maxY;
+                const inDragArea =
+                  activeDragArea &&
+                  col >= activeDragArea.minX &&
+                  col <= activeDragArea.maxX &&
+                  row >= activeDragArea.minY &&
+                  row <= activeDragArea.maxY;
+
+                const inAnyPrebuild =
+                  Boolean(inDragArea) ||
+                  effectivePrebuildAreas.some(
+                    (area) =>
+                      col >= area.minX &&
+                      col <= area.maxX &&
+                      row >= area.minY &&
+                      row <= area.maxY
+                  );
 
                 return (
                   <circle
                     key={`dot-${col}-${row}`}
                     cx={padding + col * cellSize}
                     cy={padding + row * cellSize}
-                    r={inPrebuild ? 4.5 : 3}
-                    fill={inPrebuild ? '#6366f1' : '#cbd5e1'}
+                    r={inAnyPrebuild ? 4.5 : 3}
+                    fill={inAnyPrebuild ? '#6366f1' : '#cbd5e1'}
                     className="pointer-events-none transition-all"
                   />
                 );
               })
             )}
 
-            {/* Prebuild Selection Box */}
-            {activeArea && (
-              <g className="pointer-events-none">
+            {/* Prebuild Selection Boxes (Multiple Areas) */}
+            {effectivePrebuildAreas.map((area, idx) => (
+              <g key={area.id || `prebuild-${idx}`}>
                 {/* Translucent fill & glowing dashed border */}
                 <rect
-                  x={padding + activeArea.minX * cellSize - cellSize * 0.42}
-                  y={padding + activeArea.minY * cellSize - cellSize * 0.42}
-                  width={(activeArea.maxX - activeArea.minX) * cellSize + cellSize * 0.84}
-                  height={(activeArea.maxY - activeArea.minY) * cellSize + cellSize * 0.84}
+                  x={padding + area.minX * cellSize - cellSize * 0.42}
+                  y={padding + area.minY * cellSize - cellSize * 0.42}
+                  width={(area.maxX - area.minX) * cellSize + cellSize * 0.84}
+                  height={(area.maxY - area.minY) * cellSize + cellSize * 0.84}
                   rx={14}
                   fill="#6366f1"
                   fillOpacity={0.14}
                   stroke="#4f46e5"
                   strokeWidth={2.5}
                   strokeDasharray="6 4"
+                  className="pointer-events-none"
                 />
 
-                {/* Dimension & Status Badge */}
+                {/* Dimension & Status Badge with Remove button */}
                 <g
                   transform={`translate(${
-                    padding + activeArea.minX * cellSize - cellSize * 0.42
+                    padding + area.minX * cellSize - cellSize * 0.42
                   }, ${
-                    Math.max(8, padding + activeArea.minY * cellSize - cellSize * 0.42 - 24)
+                    Math.max(8, padding + area.minY * cellSize - cellSize * 0.42 - 24)
                   })`}
                 >
                   <rect
                     x={0}
                     y={0}
-                    width={84}
-                    height={20}
-                    rx={10}
+                    width={100}
+                    height={22}
+                    rx={11}
                     fill="#4f46e5"
                     style={{ filter: 'drop-shadow(0 2px 4px rgba(79, 70, 229, 0.35))' }}
                   />
                   <text
-                    x={42}
-                    y={14}
+                    x={40}
+                    y={15}
                     textAnchor="middle"
                     fill="#ffffff"
                     fontSize="11"
                     fontWeight="bold"
                     fontFamily="sans-serif"
+                    className="pointer-events-none"
                   >
-                    {activeArea.maxX - activeArea.minX + 1} × {activeArea.maxY - activeArea.minY + 1} Area
+                    #{idx + 1}: {area.maxX - area.minX + 1}×{area.maxY - area.minY + 1}
+                  </text>
+                  {/* Remove Area (X) button inside the badge */}
+                  <g
+                    transform="translate(84, 11)"
+                    className="cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onRemovePrebuildArea) {
+                        onRemovePrebuildArea(area.id || idx);
+                      } else if (onSelectPrebuildArea) {
+                        onSelectPrebuildArea(null);
+                      }
+                    }}
+                  >
+                    <circle r={7} fill="#3730a3" />
+                    <path
+                      d="M -2.5 -2.5 L 2.5 2.5 M 2.5 -2.5 L -2.5 2.5"
+                      stroke="#ffffff"
+                      strokeWidth={1.5}
+                      strokeLinecap="round"
+                    />
+                    <title>Remove this area</title>
+                  </g>
+                </g>
+              </g>
+            ))}
+
+            {/* Currently Dragging Area Box */}
+            {activeDragArea && (
+              <g className="pointer-events-none">
+                <rect
+                  x={padding + activeDragArea.minX * cellSize - cellSize * 0.42}
+                  y={padding + activeDragArea.minY * cellSize - cellSize * 0.42}
+                  width={(activeDragArea.maxX - activeDragArea.minX) * cellSize + cellSize * 0.84}
+                  height={(activeDragArea.maxY - activeDragArea.minY) * cellSize + cellSize * 0.84}
+                  rx={14}
+                  fill="#818cf8"
+                  fillOpacity={0.2}
+                  stroke="#6366f1"
+                  strokeWidth={2.5}
+                  strokeDasharray="4 4"
+                />
+                <g
+                  transform={`translate(${
+                    padding + activeDragArea.minX * cellSize - cellSize * 0.42
+                  }, ${
+                    Math.max(8, padding + activeDragArea.minY * cellSize - cellSize * 0.42 - 24)
+                  })`}
+                >
+                  <rect x={0} y={0} width={92} height={20} rx={10} fill="#6366f1" />
+                  <text x={46} y={14} textAnchor="middle" fill="#ffffff" fontSize="11" fontWeight="bold">
+                    {activeDragArea.maxX - activeDragArea.minX + 1} × {activeDragArea.maxY - activeDragArea.minY + 1} Area
                   </text>
                 </g>
               </g>

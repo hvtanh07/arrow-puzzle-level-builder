@@ -551,3 +551,107 @@ export function generateStyledArrowsForArea(options: GenerateOptions): PrebuildR
     message: 'Could not find a solvable high-density configuration. Try adjusting the marked area or clearing nearby obstacles.',
   };
 }
+
+export interface GenerateMultipleOptions {
+  areas: SelectionArea[];
+  existingArrows: Arrow[];
+  gridSize: GridSize;
+  style: StyleProfile;
+  maxAttemptsPerArea?: number;
+}
+
+/**
+ * Synthesizes high-density, space-filling arrows across MULTIPLE marked areas.
+ * Generates arrows in each area sequentially while updating occupied obstacles,
+ * guaranteeing all generated arrows are mutually compatible, 0 resting overlaps, and 100% solvable.
+ */
+export function generateStyledArrowsForMultipleAreas(options: GenerateMultipleOptions): PrebuildResult {
+  const { areas, existingArrows, gridSize, style } = options;
+  const maxAttemptsPerArea = options.maxAttemptsPerArea || 30;
+
+  if (!areas || areas.length === 0) {
+    return {
+      success: false,
+      arrows: existingArrows,
+      newArrows: [],
+      message: 'No areas marked to fill. Drag on the canvas to mark one or more areas.',
+    };
+  }
+
+  // Filter out any areas that are degenerate (< 2 cells in both dimensions)
+  const validAreas = areas.filter(
+    (a) => (a.maxX - a.minX + 1) >= 2 || (a.maxY - a.minY + 1) >= 2
+  );
+
+  if (validAreas.length === 0) {
+    return {
+      success: false,
+      arrows: existingArrows,
+      newArrows: [],
+      message: 'Marked area(s) must be at least 2 cells wide or tall.',
+    };
+  }
+
+  // If only 1 area, execute single area generation directly
+  if (validAreas.length === 1) {
+    return generateStyledArrowsForArea({
+      area: validAreas[0],
+      existingArrows,
+      gridSize,
+      style,
+      maxAttempts: maxAttemptsPerArea,
+    });
+  }
+
+  // Try multiple global ordering passes to guarantee high solvability
+  const maxGlobalPasses = 5;
+  for (let pass = 0; pass < maxGlobalPasses; pass++) {
+    let currentAreas = [...validAreas];
+    if (pass === 1) {
+      currentAreas.reverse();
+    } else if (pass > 1) {
+      currentAreas = shuffleArray(currentAreas);
+    }
+
+    let accumulatedArrows = [...existingArrows];
+    let allNewArrows: Arrow[] = [];
+    let allSucceeded = true;
+
+    for (const area of currentAreas) {
+      const areaRes = generateStyledArrowsForArea({
+        area,
+        existingArrows: accumulatedArrows,
+        gridSize,
+        style,
+        maxAttempts: maxAttemptsPerArea,
+      });
+
+      if (!areaRes.success) {
+        allSucceeded = false;
+        break;
+      }
+
+      allNewArrows = [...allNewArrows, ...areaRes.newArrows];
+      accumulatedArrows = areaRes.arrows;
+    }
+
+    if (allSucceeded) {
+      const finalSol = solveLevel(accumulatedArrows, gridSize);
+      if (finalSol.isSolvable && !finalSol.hasOverlaps) {
+        return {
+          success: true,
+          arrows: accumulatedArrows,
+          newArrows: allNewArrows,
+          message: `Successfully filled ${validAreas.length} areas with ${allNewArrows.length} arrows! 100% solvable (${finalSol.stepOrder.length} steps).`,
+        };
+      }
+    }
+  }
+
+  return {
+    success: false,
+    arrows: existingArrows,
+    newArrows: [],
+    message: `Could not generate a fully solvable configuration across all ${validAreas.length} areas. Try adjusting the marked boxes or removing obstacles.`,
+  };
+}

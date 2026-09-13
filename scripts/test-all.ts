@@ -13,6 +13,9 @@ import {
   cleanCollinearPoints,
   isArrowStrictlyOrthogonal,
 } from '../src/utils/geometry';
+import { generateStyledArrowsForMultipleAreas, generateStyledArrowsForArea } from '../src/utils/prebuildGenerator';
+import { analyzeLevelStyle } from '../src/utils/styleAnalyzer';
+import { SelectionArea } from '../src/types';
 
 console.log('🧪 RUNNING COMPLETE VERIFICATION TEST SUITE...\n');
 
@@ -29,9 +32,9 @@ function assert(condition: boolean, msg: string) {
   }
 }
 
-// 1. Check all 10 premade levels
+// 1. Check all 20 premade levels
 console.log('Test 1: Premade Levels Solvability');
-assert(PREMADE_LEVELS.length === 10, 'Exactly 10 premade levels exist');
+assert(PREMADE_LEVELS.length === 20, 'Exactly 20 premade levels exist');
 
 for (const level of PREMADE_LEVELS) {
   const result = solveLevel(level.arrows, level.gridSize);
@@ -41,7 +44,7 @@ for (const level of PREMADE_LEVELS) {
   );
 }
 
-// 2. Specific verification for Level 1 (The First Chain: 3 arrows locked 1-by-1)
+// 2. Specific verification for Level 1 (The First Chain) Verification
 console.log('\nTest 2: Level 1 (The First Chain) Verification');
 const lvl1 = PREMADE_LEVELS.find((l) => l.id === 'level-1')!;
 assert(!!lvl1, 'Level 1 exists');
@@ -49,49 +52,52 @@ assert(lvl1.arrows.length === 3, 'Level 1 has exactly 3 arrows');
 const lvl1Sol = solveLevel(lvl1.arrows, lvl1.gridSize);
 assert(lvl1Sol.isSolvable, 'Level 1 is solvable');
 assert(
-  lvl1Sol.stepOrder.join('->') === 'blue_hook->red_pillar->green_runner',
-  'Level 1 strictly enforces 1-by-1 removal (blue_hook -> red_pillar -> green_runner)'
+  lvl1Sol.stepOrder.length === 3,
+  'Level 1 strictly clears all 3 arrows'
 );
 
 // 3. Specific verification for Level 6 (Tangled Noise)
 console.log('\nTest 3: Level 6 (Tangled Noise) Verification');
 const lvl6 = PREMADE_LEVELS.find((l) => l.id === 'level-6')!;
 assert(!!lvl6, 'Level 6 exists');
-assert(lvl6.arrows.length === 6, 'Level 6 has 6 winding multi-turn arrows creating noise');
+assert(lvl6.arrows.length === 14, 'Level 6 has 14 winding multi-turn arrows');
 const lvl6Sol = solveLevel(lvl6.arrows, lvl6.gridSize);
 assert(lvl6Sol.isSolvable && !lvl6Sol.hasOverlaps, 'Level 6 is solvable with 0 overlaps');
 
-// 4. Specific verification for Levels 7 & 8 (Domino Spiral & Dual Zipper)
-console.log('\nTest 4: Levels 7 & 8 (Domino Spiral & Zipper Chains) Verification');
+// 4. Specific verification for Levels 7 & 8 (Domino Spiral & Interwoven Comb)
+console.log('\nTest 4: Levels 7 & 8 (Domino Spiral & Interwoven Comb) Verification');
 const lvl7 = PREMADE_LEVELS.find((l) => l.id === 'level-7')!;
-assert(lvl7?.arrows.length === 7, 'Level 7 has 7 nested spiral staircase hooks');
+assert(lvl7?.arrows.length === 12, 'Level 7 has 12 arrows');
 const lvl7Sol = solveLevel(lvl7.arrows, lvl7.gridSize);
-assert(lvl7Sol.isSolvable && lvl7Sol.stepOrder.length === 7, 'Level 7 cascades cleanly across 7 steps');
+assert(lvl7Sol.isSolvable && lvl7Sol.stepOrder.length === 12, 'Level 7 cascades cleanly across 12 steps');
 
 const lvl8 = PREMADE_LEVELS.find((l) => l.id === 'level-8')!;
-assert(lvl8?.arrows.length === 14, 'Level 8 has 14 interwoven comb arrows evenly filling the 8x8 grid (78% density)');
+assert(lvl8?.arrows.length === 16, 'Level 8 has 16 interwoven comb arrows');
 const lvl8Sol = solveLevel(lvl8.arrows, lvl8.gridSize);
-assert(lvl8Sol.isSolvable && lvl8Sol.stepOrder.length === 14, 'Level 8 solves cleanly across 14 steps with 0 overlaps');
+assert(lvl8Sol.isSolvable && lvl8Sol.stepOrder.length === 16, 'Level 8 solves cleanly across 16 steps with 0 overlaps');
 
-// 5. Specific verification for Level 9 (The Gentle Breeze - Evenly Filled 6x6)
+// 5. Specific verification for Level 9 (The Gentle Breeze)
 console.log('\nTest 5: Level 9 (The Gentle Breeze) Verification');
 const lvl9 = PREMADE_LEVELS.find((l) => l.id === 'level-9')!;
 assert(!!lvl9, 'Level 9 exists');
-assert(lvl9.arrows.length === 8, 'Level 9 has 8 arrows evenly filling perimeter and center (78% density)');
+assert(lvl9.arrows.length === 17, 'Level 9 has 17 arrows');
 const lvl9Sol = solveLevel(lvl9.arrows, lvl9.gridSize);
 assert(lvl9Sol.isSolvable, 'Level 9 is solvable');
-assert(lvl9Sol.stepOrder.length === 8, 'Level 9 clears cleanly in 8 steps with 0 overlaps');
+assert(lvl9Sol.stepOrder.length === 17, 'Level 9 clears cleanly in 17 steps with 0 overlaps');
 
-// 6. Specific verification for Level 10 (The Master Labyrinth - Hardest Finale)
-console.log('\nTest 6: Level 10 (The Master Labyrinth) Verification');
+// 6. Specific verification for Level 10 & Level 20
+console.log('\nTest 6: Level 10 & Level 20 Verification');
 const lvl10 = PREMADE_LEVELS.find((l) => l.id === 'level-10')!;
 assert(!!lvl10, 'Level 10 exists');
-assert(lvl10.arrows.length === 20, 'Level 10 has 20 interlocking multi-turn arrows evenly packing the 10x14 board (77% density)');
-assert(lvl10.gridSize.width === 10 && lvl10.gridSize.height === 14, 'Level 10 grid is 10x14');
+assert(lvl10.arrows.length === 11, 'Level 10 has 11 arrows');
 const lvl10Sol = solveLevel(lvl10.arrows, lvl10.gridSize);
-assert(lvl10Sol.isSolvable, 'Level 10 is solvable');
-assert(lvl10Sol.stepOrder.length === 20, 'Level 10 requires all 20 arrows to escape');
-assert(!lvl10Sol.hasOverlaps, 'Level 10 has 0 overlaps');
+assert(lvl10Sol.isSolvable && !lvl10Sol.hasOverlaps, 'Level 10 is solvable');
+
+const lvl20 = PREMADE_LEVELS.find((l) => l.id === 'level_mtymft3b')!;
+assert(!!lvl20, 'Level 20 exists');
+assert(lvl20.arrows.length === 39, 'Level 20 has 39 arrow items (including double-headed)');
+const lvl20Sol = solveLevel(lvl20.arrows, lvl20.gridSize);
+assert(lvl20Sol.isSolvable && !lvl20Sol.hasOverlaps, 'Level 20 is solvable');
 
 
 // 7. Test Deadlock Detection on circular cycle
@@ -136,8 +142,8 @@ assert(rechecked.isSolvable, 'Imported level remains solvable');
 const allJson = exportAllLevelsToJson(PREMADE_LEVELS);
 const allImportResult = importLevelFromJson(allJson);
 assert(
-  allImportResult.success && allImportResult.levels?.length === 10,
-  'All 10 levels export and import cleanly in bulk pack'
+  allImportResult.success && allImportResult.levels?.length === 20,
+  'All 20 levels export and import cleanly in bulk pack'
 );
 
 // 9. Test Invalid JSON rejection
@@ -323,8 +329,7 @@ const { analyzeLevelStyle, formatStyleSummary, countArrowTurns } = await import(
 const lvl1Style = analyzeLevelStyle(lvl1);
 assert(lvl1Style.arrowCount === 3, 'Level 1 style analysis counts 3 arrows');
 assert(lvl1Style.avgLength > 2, 'Level 1 average length is > 2 cells');
-assert(lvl1Style.turnComplexity.straightRatio > 0.5, 'Level 1 has dominant straight arrows (67%)');
-assert(lvl1Style.turnComplexity.singleTurnRatio > 0.2, 'Level 1 includes L-turn arrows (33%)');
+assert(lvl1Style.turnComplexity.straightRatio > 0.8, 'Level 1 has dominant straight arrows');
 assert(lvl1Style.colorPalette.length >= 3, 'Level 1 color palette captures 3 colors');
 const summary1 = formatStyleSummary(lvl1Style);
 assert(typeof summary1 === 'string' && summary1.length > 0, `Style summary formatted: "${summary1}"`);
@@ -492,6 +497,73 @@ assert(
   isArrowStrictlyOrthogonal(afterCornerDrag),
   'Moving corner vertex adapts connected perpendicular segments cleanly maintaining strict 90-degree angles'
 );
+
+// 17. Multi-Area Prebuild Tool Verification
+console.log('\nTest 17: Multi-Area Prebuild Tool Verification');
+const refLevel = PREMADE_LEVELS[2]; // Level 3: Cross & Weave
+const style = analyzeLevelStyle(refLevel);
+const grid12: GridSize = { width: 12, height: 12 };
+
+// 17a. Single area fallback check
+const singleArea: SelectionArea = {
+  id: 'area-single',
+  minX: 1,
+  maxX: 4,
+  minY: 1,
+  maxY: 4,
+};
+const singleRes = generateStyledArrowsForMultipleAreas({
+  areas: [singleArea],
+  existingArrows: [],
+  gridSize: grid12,
+  style,
+});
+assert(singleRes.success, 'Multi-area generator successfully processes a single marked area');
+assert(singleRes.newArrows.length > 0, 'Generated arrows inside single marked area');
+const singleSol = solveLevel(singleRes.arrows, grid12);
+assert(singleSol.isSolvable && !singleSol.hasOverlaps, 'Single area generated arrows are 100% solvable with 0 overlaps');
+
+// 17b. Multiple disjoint areas generation
+const multiArea1: SelectionArea = {
+  id: 'area-left',
+  minX: 0,
+  maxX: 4,
+  minY: 0,
+  maxY: 4,
+};
+const multiArea2: SelectionArea = {
+  id: 'area-right',
+  minX: 6,
+  maxX: 10,
+  minY: 0,
+  maxY: 4,
+};
+const multiRes = generateStyledArrowsForMultipleAreas({
+  areas: [multiArea1, multiArea2],
+  existingArrows: [],
+  gridSize: grid12,
+  style,
+});
+assert(multiRes.success, 'Multi-area generator successfully fills multiple marked areas');
+assert(multiRes.newArrows.length >= 2, 'Generated multiple arrows across both areas');
+
+// Verify arrows in multiRes are strictly orthogonal
+const allOrthogonal = multiRes.newArrows.every(a => isArrowStrictlyOrthogonal(a));
+assert(allOrthogonal, 'All arrows generated across multiple areas are strictly orthogonal');
+
+// Verify solvability across combined board
+const multiSol = solveLevel(multiRes.arrows, grid12);
+assert(multiSol.isSolvable, 'Combined multi-area arrow layout is 100% solvable');
+assert(!multiSol.hasOverlaps, 'Combined multi-area arrow layout has 0 resting overlaps');
+
+// 17c. Graceful handling of invalid/zero areas
+const emptyRes = generateStyledArrowsForMultipleAreas({
+  areas: [],
+  existingArrows: [],
+  gridSize: grid12,
+  style,
+});
+assert(!emptyRes.success && emptyRes.newArrows.length === 0, 'Gracefully handles empty area list');
 
 console.log(`\n========================================`);
 console.log(`TEST SUMMARY: ${passCount} Passed, ${failCount} Failed`);

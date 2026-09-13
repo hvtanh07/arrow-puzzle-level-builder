@@ -9,7 +9,7 @@ import { LiveSolvabilityBadge } from './components/LiveSolvabilityBadge';
 import { solveLevel } from './utils/solver';
 import { sound } from './utils/sound';
 import { analyzeLevelStyle } from './utils/styleAnalyzer';
-import { generateStyledArrowsForArea } from './utils/prebuildGenerator';
+import { generateStyledArrowsForMultipleAreas } from './utils/prebuildGenerator';
 import {
   Play,
   Pencil,
@@ -18,30 +18,41 @@ import {
   Compass,
 } from 'lucide-react';
 
-const STORAGE_KEY = 'arrow_puzzle_levels_v7';
+const STORAGE_KEY = 'arrow_levels_v3';
 
 export const App: React.FC = () => {
-  // Mode: 'builder' | 'playtest'
-  const [mode, setMode] = useState<'builder' | 'playtest'>('builder');
-
-  // Load levels from localStorage or fallback to premade levels
+  // Level manager state
   const [levels, setLevels] = useState<Level[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {
+        console.error('Failed to parse saved levels:', e);
       }
-    } catch {
-      // ignore
+    }
+    // Check previous versions to preserve any custom user levels, while updating premade levels
+    const oldSaved = localStorage.getItem('arrow_levels_v2') || localStorage.getItem('arrow_levels');
+    if (oldSaved) {
+      try {
+        const oldParsed: Level[] = JSON.parse(oldSaved);
+        if (Array.isArray(oldParsed) && oldParsed.length > 0) {
+          const customLevels = oldParsed.filter((ol) => !PREMADE_LEVELS.some((pl) => pl.id === ol.id));
+          return [...PREMADE_LEVELS, ...customLevels];
+        }
+      } catch (e) {
+        console.error('Failed to parse old saved levels:', e);
+      }
     }
     return PREMADE_LEVELS;
   });
 
-  // Active level ID (default to 'level-1' - The First Chain)
-  const [currentLevelId, setCurrentLevelId] = useState<string>('level-1');
+  const [currentLevelId, setCurrentLevelId] = useState<string>(() => {
+    return levels[0]?.id || 'level-1';
+  });
+
+  const [mode, setMode] = useState<'builder' | 'playtest'>('builder');
 
   // Editor states (shared between Canvas and Right Inspector)
   const [tool, setTool] = useState<EditorTool>('draw');
@@ -50,8 +61,8 @@ export const App: React.FC = () => {
   const [showRays, setShowRays] = useState<boolean>(false);
   const [showCoords, setShowCoords] = useState<boolean>(true);
 
-  // Prebuild Area state & style reference level
-  const [prebuildArea, setPrebuildArea] = useState<SelectionArea | null>(null);
+  // Prebuild Areas state & style reference level
+  const [prebuildAreas, setPrebuildAreas] = useState<SelectionArea[]>([]);
   const [referenceLevelId, setReferenceLevelId] = useState<string>('');
 
   // Sound state
@@ -63,23 +74,18 @@ export const App: React.FC = () => {
 
   // Save to localStorage whenever levels change
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(levels));
-    } catch (e) {
-      console.error('Failed to save to localStorage:', e);
-    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(levels));
   }, [levels]);
 
   // Current active level object
   const currentLevel = useMemo(() => {
-    return levels.find((l) => l.id === currentLevelId) || levels[0] || PREMADE_LEVELS[8];
+    return levels.find((l) => l.id === currentLevelId) || levels[0] || PREMADE_LEVELS[0];
   }, [levels, currentLevelId]);
 
-  // Index of current level and previous level in sequence
-  const currentIndex = levels.findIndex((l) => l.id === currentLevelId);
-  const prevLevel = currentIndex > 0 ? levels[currentIndex - 1] : levels[0];
+  const currentIndex = levels.findIndex((l) => l.id === currentLevel.id);
+  const prevLevel = currentIndex > 0 ? levels[currentIndex - 1] : null;
 
-  // Set default reference level (previous level) when switching level
+  // Initialize reference level default to the previous level
   useEffect(() => {
     const idx = levels.findIndex((l) => l.id === currentLevelId);
     if (idx > 0) {
@@ -89,7 +95,7 @@ export const App: React.FC = () => {
     } else {
       setReferenceLevelId(levels[0]?.id || '');
     }
-    setPrebuildArea(null);
+    setPrebuildAreas([]);
   }, [currentLevelId, levels]);
 
   // Reference level object used for style analysis
@@ -129,14 +135,14 @@ export const App: React.FC = () => {
     setSelectedArrowId(null);
   }, [currentLevelId]);
 
-  // Trigger procedural prebuild fill
+  // Trigger procedural prebuild fill across all marked areas
   const handleTriggerPrebuild = () => {
-    if (!prebuildArea) return;
+    if (prebuildAreas.length === 0) return;
     if (!styleProfile) return;
 
     sound.playClick();
-    const result = generateStyledArrowsForArea({
-      area: prebuildArea,
+    const result = generateStyledArrowsForMultipleAreas({
+      areas: prebuildAreas,
       existingArrows: currentLevel.arrows,
       gridSize: currentLevel.gridSize,
       style: styleProfile,
@@ -145,11 +151,34 @@ export const App: React.FC = () => {
     if (result.success) {
       sound.playVictory();
       updateCurrentLevelArrows(result.arrows);
-      setPrebuildArea(null);
+      setPrebuildAreas([]);
     } else {
       sound.playWhoosh();
       alert(result.message);
     }
+  };
+
+  const handleAddPrebuildArea = (area: SelectionArea) => {
+    setPrebuildAreas((prev) => [
+      ...prev,
+      {
+        ...area,
+        id: area.id || `area_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      },
+    ]);
+  };
+
+  const handleRemovePrebuildArea = (idOrIndex: string | number) => {
+    sound.playPop();
+    setPrebuildAreas((prev) =>
+      typeof idOrIndex === 'number'
+        ? prev.filter((_, idx) => idx !== idOrIndex)
+        : prev.filter((a, idx) => (a.id ? a.id !== idOrIndex : idx !== Number(idOrIndex)))
+    );
+  };
+
+  const handleClearPrebuildAreas = () => {
+    setPrebuildAreas([]);
   };
 
   const updateCurrentLevelArrows = (newArrows: Arrow[]) => {
@@ -589,8 +618,10 @@ export const App: React.FC = () => {
               showRays={showRays}
               showCoords={showCoords}
               onPlayTest={() => setMode('playtest')}
-              prebuildArea={prebuildArea}
-              onSelectPrebuildArea={setPrebuildArea}
+              prebuildAreas={prebuildAreas}
+              onAddPrebuildArea={handleAddPrebuildArea}
+              onRemovePrebuildArea={handleRemovePrebuildArea}
+              onClearPrebuildAreas={handleClearPrebuildAreas}
               onTriggerPrebuild={handleTriggerPrebuild}
               sourceLevelName={referenceLevel?.name}
             />
@@ -632,8 +663,9 @@ export const App: React.FC = () => {
           onChangeLayer={handleChangeLayer}
           onBringToFront={handleBringToFront}
           onSendToBack={handleSendToBack}
-          prebuildArea={prebuildArea}
-          onClearPrebuildArea={() => setPrebuildArea(null)}
+          prebuildAreas={prebuildAreas}
+          onRemovePrebuildArea={handleRemovePrebuildArea}
+          onClearPrebuildAreas={handleClearPrebuildAreas}
           onTriggerPrebuild={handleTriggerPrebuild}
           allLevels={levels}
           currentLevelIndex={currentIndex}
