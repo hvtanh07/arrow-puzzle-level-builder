@@ -519,6 +519,12 @@ export const App: React.FC = () => {
     }
   };
 
+  // Reorder levels
+  const handleReorderLevels = (newLevels: Level[]) => {
+    sound.playClick();
+    setLevels(newLevels);
+  };
+
   // Auto-Solve Preview
   const handlePreviewSolution = () => {
     if (!solvability.isSolvable || solvability.stepOrder.length === 0 || isPreviewing) return;
@@ -687,6 +693,7 @@ export const App: React.FC = () => {
           onRenameLevel={handleRenameLevel}
           onRestoreDefaults={handleRestoreDefaults}
           onImportLevels={handleImportLevels}
+          onReorderLevels={handleReorderLevels}
         />
 
         {/* 2. Center: Canvas Editor or Play Test */}

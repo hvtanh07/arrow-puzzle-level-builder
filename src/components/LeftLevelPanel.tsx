@@ -22,6 +22,10 @@ import {
   FolderCheck,
   X,
   Layers,
+  GripVertical,
+  ChevronUp,
+  ChevronDown,
+  ArrowUpDown,
 } from 'lucide-react';
 import {
   saveJsonWithDirectoryPrompt,
@@ -40,6 +44,7 @@ interface LeftLevelPanelProps {
   onRenameLevel: (levelId: string, newName: string) => void;
   onRestoreDefaults: () => void;
   onImportLevels: (imported: Level | Level[]) => void;
+  onReorderLevels?: (newLevels: Level[]) => void;
 }
 
 export const LeftLevelPanel: React.FC<LeftLevelPanelProps> = ({
@@ -53,6 +58,7 @@ export const LeftLevelPanel: React.FC<LeftLevelPanelProps> = ({
   onRenameLevel,
   onRestoreDefaults,
   onImportLevels,
+  onReorderLevels,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -71,6 +77,83 @@ export const LeftLevelPanel: React.FC<LeftLevelPanelProps> = ({
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importText, setImportText] = useState('');
   const [importError, setImportError] = useState<string | null>(null);
+
+  // Drag-and-drop & level rearranging state
+  const [draggedLevelId, setDraggedLevelId] = useState<string | null>(null);
+  const [dragOverLevelId, setDragOverLevelId] = useState<string | null>(null);
+  const [dragOverPosition, setDragOverPosition] = useState<'before' | 'after' | null>(null);
+
+  const moveLevel = (id: string, delta: number) => {
+    if (!onReorderLevels) return;
+    const idx = levels.findIndex((l) => l.id === id);
+    if (idx === -1) return;
+    const targetIdx = idx + delta;
+    if (targetIdx < 0 || targetIdx >= levels.length) return;
+
+    sound.playClick();
+    const updated = [...levels];
+    const [item] = updated.splice(idx, 1);
+    updated.splice(targetIdx, 0, item);
+    onReorderLevels(updated);
+  };
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    setDraggedLevelId(id);
+    e.dataTransfer.setData('text/plain', id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, id: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (id !== draggedLevelId) {
+      setDragOverLevelId(id);
+      const rect = e.currentTarget.getBoundingClientRect();
+      const midY = rect.top + rect.height / 2;
+      const position = e.clientY < midY ? 'before' : 'after';
+      setDragOverPosition(position);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverLevelId(null);
+    setDragOverPosition(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    if (!draggedLevelId || draggedLevelId === targetId || !onReorderLevels) {
+      setDraggedLevelId(null);
+      setDragOverLevelId(null);
+      setDragOverPosition(null);
+      return;
+    }
+
+    const fromIdx = levels.findIndex((l) => l.id === draggedLevelId);
+    if (fromIdx === -1) return;
+
+    const updated = [...levels];
+    const [movedItem] = updated.splice(fromIdx, 1);
+
+    const targetIdxAfterRemoval = updated.findIndex((l) => l.id === targetId);
+    if (targetIdxAfterRemoval === -1) return;
+
+    const insertIdx = dragOverPosition === 'after' ? targetIdxAfterRemoval + 1 : targetIdxAfterRemoval;
+    updated.splice(insertIdx, 0, movedItem);
+
+    sound.playClick();
+    onReorderLevels(updated);
+
+    setDraggedLevelId(null);
+    setDragOverLevelId(null);
+    setDragOverPosition(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedLevelId(null);
+    setDragOverLevelId(null);
+    setDragOverPosition(null);
+  };
 
   const filteredLevels = levels.filter((lvl) =>
     lvl.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -241,83 +324,120 @@ export const LeftLevelPanel: React.FC<LeftLevelPanelProps> = ({
         {filteredLevels.map((lvl) => {
           const isCurrent = lvl.id === currentLevelId;
           const solv = solveLevel(lvl.arrows, lvl.gridSize);
+          const masterIndex = levels.findIndex((l) => l.id === lvl.id);
+          const isFirst = masterIndex === 0;
+          const isLast = masterIndex === levels.length - 1;
+          const isDraggingThis = draggedLevelId === lvl.id;
+          const isOverThis = dragOverLevelId === lvl.id;
 
           return (
             <div
               key={lvl.id}
+              draggable={!editingId && Boolean(onReorderLevels)}
+              onDragStart={(e) => handleDragStart(e, lvl.id)}
+              onDragOver={(e) => handleDragOver(e, lvl.id)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, lvl.id)}
+              onDragEnd={handleDragEnd}
               onClick={() => {
                 if (!isCurrent) {
                   sound.playClick();
                   onSelectLevel(lvl.id);
                 }
               }}
-              className={`group flex flex-col p-2.5 rounded-xl border transition-all cursor-pointer ${
+              className={`group relative flex flex-col p-2.5 rounded-xl border transition-all cursor-pointer select-none ${
                 isCurrent
                   ? 'bg-blue-50/70 border-blue-400 ring-2 ring-blue-400/20 shadow-xs'
                   : 'bg-white border-slate-200/80 hover:border-slate-300 hover:bg-slate-50/60'
-              }`}
+              } ${isDraggingThis ? 'opacity-30 border-dashed border-blue-500 scale-[0.98]' : ''}`}
             >
-              {/* Top Row: Title & Solvability Badge */}
+              {/* Drop Insertion Indicator */}
+              {isOverThis && dragOverPosition === 'before' && (
+                <div className="absolute -top-1 left-2 right-2 h-1 bg-blue-500 rounded-full z-20 shadow-xs animate-pulse" />
+              )}
+              {isOverThis && dragOverPosition === 'after' && (
+                <div className="absolute -bottom-1 left-2 right-2 h-1 bg-blue-500 rounded-full z-20 shadow-xs animate-pulse" />
+              )}
+
+              {/* Top Row: Grip, Level #, Title & Solvability Badge */}
               <div className="flex items-center justify-between gap-1.5">
-                <div className="flex-1 min-w-0">
-                  {editingId === lvl.id ? (
-                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="text"
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            onRenameLevel(lvl.id, editName);
-                            setEditingId(null);
-                          } else if (e.key === 'Escape') {
-                            setEditingId(null);
-                          }
-                        }}
-                        className="px-1.5 py-0.5 text-xs font-bold border rounded w-full outline-none focus:ring-1 focus:ring-blue-500"
-                        autoFocus
-                      />
-                      <button
-                        onClick={() => {
-                          onRenameLevel(lvl.id, editName);
-                          setEditingId(null);
-                        }}
-                        className="p-1 text-emerald-600 hover:bg-emerald-50 rounded"
-                      >
-                        <Check className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className={`font-bold text-xs truncate ${
-                          isCurrent ? 'text-blue-900' : 'text-slate-800'
-                        }`}
-                      >
-                        {lvl.name}
-                      </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingId(lvl.id);
-                          setEditName(lvl.name);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 p-0.5 text-slate-400 hover:text-slate-700 transition-opacity"
-                        title="Rename Level"
-                      >
-                        <Pencil className="w-3 h-3" />
-                      </button>
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  {/* Drag Handle */}
+                  {onReorderLevels && (
+                    <div
+                      className="cursor-grab active:cursor-grabbing text-slate-300 group-hover:text-slate-500 hover:bg-slate-100 rounded p-0.5 shrink-0 transition-colors"
+                      title="Drag to rearrange level"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <GripVertical className="w-3.5 h-3.5" />
                     </div>
                   )}
 
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="text-[10px] font-mono text-slate-500">
-                      {lvl.gridSize.width}×{lvl.gridSize.height}
-                    </span>
-                    <span className="text-slate-300">•</span>
-                    <span className="text-[10px] text-slate-500 font-medium">
-                      {lvl.arrows.length} arrows
-                    </span>
+                  {/* Level Number Badge */}
+                  <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-100 group-hover:bg-slate-200/70 group-hover:text-slate-600 px-1.5 py-0.5 rounded shrink-0">
+                    #{masterIndex + 1}
+                  </span>
+
+                  <div className="flex-1 min-w-0">
+                    {editingId === lvl.id ? (
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="text"
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              onRenameLevel(lvl.id, editName);
+                              setEditingId(null);
+                            } else if (e.key === 'Escape') {
+                              setEditingId(null);
+                            }
+                          }}
+                          className="px-1.5 py-0.5 text-xs font-bold border rounded w-full outline-none focus:ring-1 focus:ring-blue-500"
+                          autoFocus
+                        />
+                        <button
+                          onClick={() => {
+                            onRenameLevel(lvl.id, editName);
+                            setEditingId(null);
+                          }}
+                          className="p-1 text-emerald-600 hover:bg-emerald-50 rounded"
+                        >
+                          <Check className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={`font-bold text-xs truncate ${
+                            isCurrent ? 'text-blue-900' : 'text-slate-800'
+                          }`}
+                        >
+                          {lvl.name}
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingId(lvl.id);
+                            setEditName(lvl.name);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-0.5 text-slate-400 hover:text-slate-700 transition-opacity"
+                          title="Rename Level"
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-[10px] font-mono text-slate-500">
+                        {lvl.gridSize.width}×{lvl.gridSize.height}
+                      </span>
+                      <span className="text-slate-300">•</span>
+                      <span className="text-[10px] text-slate-500 font-medium">
+                        {lvl.arrows.length} arrows
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -355,6 +475,29 @@ export const LeftLevelPanel: React.FC<LeftLevelPanelProps> = ({
                 </button>
 
                 <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+                  {/* Move Up / Down quick buttons */}
+                  {onReorderLevels && (
+                    <>
+                      <button
+                        onClick={() => moveLevel(lvl.id, -1)}
+                        disabled={isFirst}
+                        className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-20 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-all"
+                        title="Move level up"
+                      >
+                        <ChevronUp className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => moveLevel(lvl.id, 1)}
+                        disabled={isLast}
+                        className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-20 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-all"
+                        title="Move level down"
+                      >
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      </button>
+                      <div className="h-3 w-px bg-slate-200 mx-0.5" />
+                    </>
+                  )}
+
                   <button
                     onClick={() => handleExportSingle(lvl)}
                     className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100"
