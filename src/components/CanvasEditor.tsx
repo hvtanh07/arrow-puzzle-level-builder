@@ -7,6 +7,7 @@ import {
   getHeadDirection,
   getReverseHeadDirection,
   getEffectiveLayer,
+  cleanCollinearPoints,
 } from '../utils/geometry';
 import { getColorHex } from '../constants/colors';
 import { sound } from '../utils/sound';
@@ -59,9 +60,20 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
   const [dragVertex, setDragVertex] = useState<{
     arrowId: string;
     vertexIndex: number;
+    origPoints: Point[];
+    hasMoved: boolean;
   } | null>(null);
 
-  // Dragging whole arrow state
+  // Dragging segment (line section) state
+  const [dragSegment, setDragSegment] = useState<{
+    arrowId: string;
+    segmentIndex: number;
+    isHorizontal: boolean;
+    origPoints: Point[];
+    hasMoved: boolean;
+  } | null>(null);
+
+  // Dragging whole arrow state (via Move Icon only)
   const [dragArrow, setDragArrow] = useState<{
     arrowId: string;
     startMouse: Point;
@@ -146,33 +158,68 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
     }
   }, [tool]);
 
+  // Drag release and commit handler
+  const handleDragRelease = useCallback(() => {
+    setIsPanning(false);
+
+    if (dragVertex) {
+      if (dragVertex.hasMoved) {
+        const arr = arrows.find((a) => a.id === dragVertex.arrowId);
+        if (arr) {
+          const cleaned = cleanCollinearPoints(arr.points);
+          if (cleaned.length >= 2) {
+            onChangeArrows(arrows.map((a) => (a.id === arr.id ? { ...a, points: cleaned } : a)));
+          } else {
+            onChangeArrows(arrows.map((a) => (a.id === arr.id ? { ...a, points: dragVertex.origPoints } : a)));
+          }
+        }
+        sound.playPop();
+      }
+      setDragVertex(null);
+    }
+
+    if (dragSegment) {
+      if (dragSegment.hasMoved) {
+        const arr = arrows.find((a) => a.id === dragSegment.arrowId);
+        if (arr) {
+          const cleaned = cleanCollinearPoints(arr.points);
+          if (cleaned.length >= 2) {
+            onChangeArrows(arrows.map((a) => (a.id === arr.id ? { ...a, points: cleaned } : a)));
+          } else {
+            onChangeArrows(arrows.map((a) => (a.id === arr.id ? { ...a, points: dragSegment.origPoints } : a)));
+          }
+        }
+        sound.playPop();
+      }
+      setDragSegment(null);
+    }
+
+    if (dragArrow) {
+      if (dragArrow.hasMoved) {
+        sound.playPop();
+      }
+      setDragArrow(null);
+    }
+
+    if (dragAreaStart) {
+      if (dragAreaCurrent) {
+        const minX = Math.min(dragAreaStart.x, dragAreaCurrent.x);
+        const maxX = Math.max(dragAreaStart.x, dragAreaCurrent.x);
+        const minY = Math.min(dragAreaStart.y, dragAreaCurrent.y);
+        const maxY = Math.max(dragAreaStart.y, dragAreaCurrent.y);
+        onSelectPrebuildArea({ minX, maxX, minY, maxY });
+        sound.playPop();
+      }
+      setDragAreaStart(null);
+      setDragAreaCurrent(null);
+    }
+  }, [dragVertex, dragSegment, dragArrow, dragAreaStart, dragAreaCurrent, arrows, onChangeArrows, onSelectPrebuildArea]);
+
   // Global mouseup listener for clean drag release anywhere
   useEffect(() => {
-    const handleGlobalMouseUp = () => {
-      setIsPanning(false);
-      if (dragVertex) setDragVertex(null);
-      if (dragArrow) {
-        if (dragArrow.hasMoved) {
-          sound.playPop();
-        }
-        setDragArrow(null);
-      }
-      if (dragAreaStart) {
-        if (dragAreaCurrent) {
-          const minX = Math.min(dragAreaStart.x, dragAreaCurrent.x);
-          const maxX = Math.max(dragAreaStart.x, dragAreaCurrent.x);
-          const minY = Math.min(dragAreaStart.y, dragAreaCurrent.y);
-          const maxY = Math.max(dragAreaStart.y, dragAreaCurrent.y);
-          onSelectPrebuildArea({ minX, maxX, minY, maxY });
-          sound.playPop();
-        }
-        setDragAreaStart(null);
-        setDragAreaCurrent(null);
-      }
-    };
-    window.addEventListener('mouseup', handleGlobalMouseUp);
-    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
-  }, [dragVertex, dragArrow, dragAreaStart, dragAreaCurrent, onSelectPrebuildArea]);
+    window.addEventListener('mouseup', handleDragRelease);
+    return () => window.removeEventListener('mouseup', handleDragRelease);
+  }, [handleDragRelease]);
 
   // Keyboard shortcut listener for finish / cancel
   useEffect(() => {
@@ -203,20 +250,64 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
         }
       : prebuildArea;
 
-  // Handle Arrow Mouse Down (Select mode: select & start drag-move)
+  // Handle Arrow Mouse Down (Select mode: select ONLY, does NOT drag arrow)
   const handleArrowMouseDown = (arrow: Arrow, e: React.MouseEvent) => {
     if (tool !== 'select') return;
     if (e.button !== 0) return; // Left mouse button only
 
     e.stopPropagation();
-    e.preventDefault();
-
     onSelectArrowId(arrow.id);
+  };
+
+  // Handle Move Handle Mouse Down (Select mode: ONLY way to drag whole arrow)
+  const handleMoveHandleMouseDown = (arrow: Arrow, e: React.MouseEvent) => {
+    if (tool !== 'select') return;
+    if (e.button !== 0) return;
+
+    e.stopPropagation();
+    e.preventDefault();
 
     const { gx, gy } = clientToGrid(e);
     setDragArrow({
       arrowId: arrow.id,
       startMouse: { x: gx, y: gy },
+      origPoints: arrow.points.map((p) => ({ ...p })),
+      hasMoved: false,
+    });
+  };
+
+  // Handle Segment Mouse Down (Select mode: drag line section along perpendicular axis)
+  const handleSegmentMouseDown = (arrow: Arrow, segmentIndex: number, e: React.MouseEvent) => {
+    if (tool !== 'select') return;
+    if (e.button !== 0) return;
+
+    e.stopPropagation();
+    e.preventDefault();
+
+    const pA = arrow.points[segmentIndex];
+    const pB = arrow.points[segmentIndex + 1];
+    const isHorizontal = Math.abs(pA.y - pB.y) < 1;
+
+    setDragSegment({
+      arrowId: arrow.id,
+      segmentIndex,
+      isHorizontal,
+      origPoints: arrow.points.map((p) => ({ ...p })),
+      hasMoved: false,
+    });
+  };
+
+  // Handle Vertex Drag Start (Select mode: drag endpoint or corner)
+  const handleVertexDragStart = (arrow: Arrow, vertexIndex: number, e: React.MouseEvent) => {
+    if (tool !== 'select') return;
+    if (e.button !== 0) return;
+
+    e.stopPropagation();
+    e.preventDefault();
+
+    setDragVertex({
+      arrowId: arrow.id,
+      vertexIndex,
       origPoints: arrow.points.map((p) => ({ ...p })),
       hasMoved: false,
     });
@@ -266,24 +357,120 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
       return;
     }
 
-    // If dragging single vertex handle
+    // 1. If dragging single vertex handle in select mode (Strictly 90 degrees!)
     if (dragVertex && tool === 'select') {
       const arrow = arrows.find((a) => a.id === dragVertex.arrowId);
       if (!arrow) return;
 
-      const newPoints = [...arrow.points];
-      const curPt = newPoints[dragVertex.vertexIndex];
-      if (curPt.x !== gx || curPt.y !== gy) {
-        newPoints[dragVertex.vertexIndex] = { x: gx, y: gy };
-        const updated = arrows.map((a) =>
-          a.id === dragVertex.arrowId ? { ...a, points: newPoints } : a
-        );
-        onChangeArrows(updated);
+      const { vertexIndex, origPoints } = dragVertex;
+      const newPoints = origPoints.map((p) => ({ ...p }));
+      const n = newPoints.length;
+
+      if (vertexIndex === 0) {
+        // Tail point
+        const p0 = newPoints[0];
+        const p1 = newPoints[1];
+        const isHoriz = Math.abs(p0.y - p1.y) < 1;
+
+        if (isHoriz) {
+          const clampedX = Math.max(0, Math.min(gridSize.width - 1, gx));
+          if (clampedX !== p0.x) {
+            newPoints[0].x = clampedX;
+            setDragVertex((prev) => (prev ? { ...prev, hasMoved: true } : null));
+            onChangeArrows(arrows.map((a) => (a.id === dragVertex.arrowId ? { ...a, points: newPoints } : a)));
+          }
+        } else {
+          const clampedY = Math.max(0, Math.min(gridSize.height - 1, gy));
+          if (clampedY !== p0.y) {
+            newPoints[0].y = clampedY;
+            setDragVertex((prev) => (prev ? { ...prev, hasMoved: true } : null));
+            onChangeArrows(arrows.map((a) => (a.id === dragVertex.arrowId ? { ...a, points: newPoints } : a)));
+          }
+        }
+      } else if (vertexIndex === n - 1) {
+        // Head point
+        const pn1 = newPoints[n - 1];
+        const pn2 = newPoints[n - 2];
+        const isHoriz = Math.abs(pn1.y - pn2.y) < 1;
+
+        if (isHoriz) {
+          const clampedX = Math.max(0, Math.min(gridSize.width - 1, gx));
+          if (clampedX !== pn1.x) {
+            newPoints[n - 1].x = clampedX;
+            setDragVertex((prev) => (prev ? { ...prev, hasMoved: true } : null));
+            onChangeArrows(arrows.map((a) => (a.id === dragVertex.arrowId ? { ...a, points: newPoints } : a)));
+          }
+        } else {
+          const clampedY = Math.max(0, Math.min(gridSize.height - 1, gy));
+          if (clampedY !== pn1.y) {
+            newPoints[n - 1].y = clampedY;
+            setDragVertex((prev) => (prev ? { ...prev, hasMoved: true } : null));
+            onChangeArrows(arrows.map((a) => (a.id === dragVertex.arrowId ? { ...a, points: newPoints } : a)));
+          }
+        }
+      } else {
+        // Interior corner vertex (0 < vertexIndex < n - 1)
+        const k = vertexIndex;
+        const prevP = newPoints[k - 1];
+        const clampedX = Math.max(0, Math.min(gridSize.width - 1, gx));
+        const clampedY = Math.max(0, Math.min(gridSize.height - 1, gy));
+
+        const segPrevHoriz = Math.abs(prevP.y - newPoints[k].y) < 1;
+        if (segPrevHoriz) {
+          // Segment k-1 is horizontal (adjusts Y to clampedY)
+          // Segment k is vertical (adjusts X to clampedX)
+          newPoints[k - 1].y = clampedY;
+          newPoints[k].y = clampedY;
+          newPoints[k].x = clampedX;
+          newPoints[k + 1].x = clampedX;
+        } else {
+          // Segment k-1 is vertical (adjusts X to clampedX)
+          // Segment k is horizontal (adjusts Y to clampedY)
+          newPoints[k - 1].x = clampedX;
+          newPoints[k].x = clampedX;
+          newPoints[k].y = clampedY;
+          newPoints[k + 1].y = clampedY;
+        }
+
+        setDragVertex((prev) => (prev ? { ...prev, hasMoved: true } : null));
+        onChangeArrows(arrows.map((a) => (a.id === dragVertex.arrowId ? { ...a, points: newPoints } : a)));
       }
       return;
     }
 
-    // If dragging whole arrow in select mode
+    // 2. If dragging line section (segment) in select mode (Strictly 90 degrees!)
+    if (dragSegment && tool === 'select') {
+      const arrow = arrows.find((a) => a.id === dragSegment.arrowId);
+      if (!arrow) return;
+
+      const { segmentIndex, isHorizontal, origPoints } = dragSegment;
+      const newPoints = origPoints.map((p) => ({ ...p }));
+      const pA = newPoints[segmentIndex];
+      const pB = newPoints[segmentIndex + 1];
+
+      if (isHorizontal) {
+        // Horizontal segment moves along Y
+        const newY = Math.max(0, Math.min(gridSize.height - 1, gy));
+        if (pA.y !== newY || pB.y !== newY) {
+          newPoints[segmentIndex].y = newY;
+          newPoints[segmentIndex + 1].y = newY;
+          setDragSegment((prev) => (prev ? { ...prev, hasMoved: true } : null));
+          onChangeArrows(arrows.map((a) => (a.id === dragSegment.arrowId ? { ...a, points: newPoints } : a)));
+        }
+      } else {
+        // Vertical segment moves along X
+        const newX = Math.max(0, Math.min(gridSize.width - 1, gx));
+        if (pA.x !== newX || pB.x !== newX) {
+          newPoints[segmentIndex].x = newX;
+          newPoints[segmentIndex + 1].x = newX;
+          setDragSegment((prev) => (prev ? { ...prev, hasMoved: true } : null));
+          onChangeArrows(arrows.map((a) => (a.id === dragSegment.arrowId ? { ...a, points: newPoints } : a)));
+        }
+      }
+      return;
+    }
+
+    // 3. If dragging whole arrow in select mode (via Move Icon)
     if (dragArrow && tool === 'select') {
       const dx = gx - dragArrow.startMouse.x;
       const dy = gy - dragArrow.startMouse.y;
@@ -322,25 +509,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
     if (isPanning || e.button === 2) {
       setIsPanning(false);
     }
-    if (dragVertex) setDragVertex(null);
-    if (dragArrow) {
-      if (dragArrow.hasMoved) {
-        sound.playPop();
-      }
-      setDragArrow(null);
-    }
-    if (tool === 'prebuild' && dragAreaStart) {
-      if (dragAreaCurrent) {
-        const minX = Math.min(dragAreaStart.x, dragAreaCurrent.x);
-        const maxX = Math.max(dragAreaStart.x, dragAreaCurrent.x);
-        const minY = Math.min(dragAreaStart.y, dragAreaCurrent.y);
-        const maxY = Math.max(dragAreaStart.y, dragAreaCurrent.y);
-        onSelectPrebuildArea({ minX, maxX, minY, maxY });
-        sound.playPop();
-      }
-      setDragAreaStart(null);
-      setDragAreaCurrent(null);
-    }
+    handleDragRelease();
   };
 
   // Handle Canvas Click (Left click only)
@@ -375,7 +544,11 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
         setDrawPoints([...drawPoints, { x: nextX, y: nextY }]);
       }
     } else if (tool === 'select') {
-      if (!dragArrow || !dragArrow.hasMoved) {
+      const movedAny =
+        Boolean(dragArrow?.hasMoved) ||
+        Boolean(dragSegment?.hasMoved) ||
+        Boolean(dragVertex?.hasMoved);
+      if (!movedAny) {
         onSelectArrowId(null);
       }
     }
@@ -681,7 +854,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
           </span>
         ) : (
           <span>
-            <b>Select Mode:</b> Drag arrow to move & release to place • Click to select
+            <b>Select Mode:</b> Click to select • Drag <b>✥ Move Handle</b> for whole arrow • Drag line / points to adjust
           </span>
         )}
         <span className="text-slate-300">|</span>
@@ -933,7 +1106,10 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
               .map((arr) => {
                 const isSelected = arr.id === selectedArrowId;
                 const isDeadlocked = solvability.deadlockedArrowIds.includes(arr.id);
-                const isDraggingThis = dragArrow?.arrowId === arr.id;
+                const isDraggingThis =
+                  dragArrow?.arrowId === arr.id ||
+                  dragSegment?.arrowId === arr.id ||
+                  dragVertex?.arrowId === arr.id;
 
                 return (
                   <ArrowRenderer
@@ -949,7 +1125,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
                     onClick={(e) => {
                       if (tool === 'select') {
                         e.stopPropagation();
-                        if (!dragArrow?.hasMoved) {
+                        if (!dragArrow?.hasMoved && !dragSegment?.hasMoved && !dragVertex?.hasMoved) {
                           sound.playClick();
                           onSelectArrowId(arr.id);
                         }
@@ -960,9 +1136,19 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
                         handleArrowMouseDown(arr, e);
                       }
                     }}
-                    onVertexDragStart={(idx) => {
+                    onMoveHandleMouseDown={(e) => {
                       if (tool === 'select') {
-                        setDragVertex({ arrowId: arr.id, vertexIndex: idx });
+                        handleMoveHandleMouseDown(arr, e);
+                      }
+                    }}
+                    onSegmentMouseDown={(segIdx, e) => {
+                      if (tool === 'select') {
+                        handleSegmentMouseDown(arr, segIdx, e);
+                      }
+                    }}
+                    onVertexDragStart={(idx, e) => {
+                      if (tool === 'select') {
+                        handleVertexDragStart(arr, idx, e);
                       }
                     }}
                   />

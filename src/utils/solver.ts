@@ -14,6 +14,41 @@ export function solveLevel(arrows: Arrow[], gridSize: GridSize): SolvabilityResu
     };
   }
 
+  // 0. Validate that all arrows are strictly orthogonal and have >= 2 points
+  for (const arrow of arrows) {
+    if (!arrow.points || arrow.points.length < 2) {
+      return {
+        isSolvable: false,
+        hasOverlaps: false,
+        overlaps: [],
+        stepOrder: [],
+        deadlockedArrowIds: [arrow.id],
+        blockingGraph: {},
+        message: `Invalid Level: Arrow "${arrow.id}" has fewer than 2 points.`,
+      };
+    }
+
+    for (let i = 0; i < arrow.points.length - 1; i++) {
+      const p1 = arrow.points[i];
+      const p2 = arrow.points[i + 1];
+      const dx = Math.abs(p2.x - p1.x);
+      const dy = Math.abs(p2.y - p1.y);
+
+      // Must be strictly orthogonal (either dx === 0 and dy > 0, or dy === 0 and dx > 0)
+      if ((dx > 0 && dy > 0) || (dx === 0 && dy === 0)) {
+        return {
+          isSolvable: false,
+          hasOverlaps: false,
+          overlaps: [],
+          stepOrder: [],
+          deadlockedArrowIds: [arrow.id],
+          blockingGraph: {},
+          message: `Invalid Level: Arrow "${arrow.id}" contains non-orthogonal (diagonal) segments or duplicate points.`,
+        };
+      }
+    }
+  }
+
   // 1. Check for overlapping arrows at rest
   const overlapCheck = checkArrowOverlaps(arrows);
 

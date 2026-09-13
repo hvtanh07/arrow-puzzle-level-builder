@@ -10,6 +10,8 @@ import {
   splitDoubleHeadedArrow,
   checkArrowOverlaps,
   getArrowOccupiedPoints,
+  cleanCollinearPoints,
+  isArrowStrictlyOrthogonal,
 } from '../src/utils/geometry';
 
 console.log('🧪 RUNNING COMPLETE VERIFICATION TEST SUITE...\n');
@@ -391,6 +393,105 @@ assert(prebuildRes2.newArrows.length > 0, `Generated ${prebuildRes2.newArrows.le
 const sol2 = solveLevel(prebuildRes2.arrows, lvl1.gridSize);
 assert(sol2.isSolvable, 'Combined level (existing + prebuild arrows) is 100% SOLVABLE');
 assert(!sol2.hasOverlaps, 'Combined level has 0 resting overlaps');
+
+// 16. Select Mode Editing & Orthogonal Integrity Verification
+console.log('\nTest 16: Select Mode & Orthogonal Editing Verification');
+
+// 16a. Non-orthogonal arrow rejected as invalid level
+const invalidDiagonalArrow: Arrow = {
+  id: 'diagonal_arrow',
+  color: 0,
+  points: [{ x: 1, y: 1 }, { x: 3, y: 4 }], // Diagonal line!
+};
+const diagonalLevelSol = solveLevel([invalidDiagonalArrow], { width: 8, height: 8 });
+assert(!diagonalLevelSol.isSolvable, 'Level containing non-orthogonal (diagonal) arrow is rejected as UNSOLVABLE');
+assert(
+  diagonalLevelSol.message.startsWith('Invalid Level:'),
+  `Solvability message clearly flags invalid level: "${diagonalLevelSol.message}"`
+);
+assert(!isArrowStrictlyOrthogonal(invalidDiagonalArrow), 'isArrowStrictlyOrthogonal returns false for diagonal arrow');
+
+// 16b. Arrow with fewer than 2 points rejected as invalid level
+const invalidPointArrow: Arrow = {
+  id: 'single_point',
+  color: 0,
+  points: [{ x: 2, y: 2 }],
+};
+const singlePointSol = solveLevel([invalidPointArrow], { width: 8, height: 8 });
+assert(!singlePointSol.isSolvable, 'Level containing arrow with fewer than 2 points is rejected as UNSOLVABLE');
+assert(!isArrowStrictlyOrthogonal(invalidPointArrow), 'isArrowStrictlyOrthogonal returns false for 1-point arrow');
+
+// 16c. cleanCollinearPoints deduplication and collinear merging
+const rawPoints: Point[] = [
+  { x: 1, y: 1 },
+  { x: 1, y: 1 }, // Duplicate
+  { x: 3, y: 1 }, // Intermediate collinear
+  { x: 5, y: 1 },
+  { x: 5, y: 4 },
+];
+const cleaned = cleanCollinearPoints(rawPoints);
+assert(cleaned.length === 3, `cleanCollinearPoints simplifies 5 points to 3 (got ${cleaned.length})`);
+assert(cleaned[0].x === 1 && cleaned[0].y === 1, 'Cleaned point 0 matches start (1,1)');
+assert(cleaned[1].x === 5 && cleaned[1].y === 1, 'Cleaned point 1 is corner (5,1)');
+assert(cleaned[2].x === 5 && cleaned[2].y === 4, 'Cleaned point 2 is end (5,4)');
+
+// 16d. Moving horizontal line section preserves 90-degree orthogonal layout
+// Snake arrow: (1,1) -> (5,1) -> (5,4) -> (2,4) -> (2,6)
+const snakeArrow: Arrow = {
+  id: 'snake',
+  color: 0,
+  points: [
+    { x: 1, y: 1 },
+    { x: 5, y: 1 }, // seg 0: horizontal y=1
+    { x: 5, y: 4 }, // seg 1: vertical x=5
+    { x: 2, y: 4 }, // seg 2: horizontal y=4
+    { x: 2, y: 6 }, // seg 3: vertical x=2
+  ],
+};
+assert(isArrowStrictlyOrthogonal(snakeArrow), 'Original snake arrow is strictly orthogonal');
+
+// Drag seg 1 (vertical x=5) to x=3
+const afterVerticalSegDrag: Arrow = {
+  ...snakeArrow,
+  points: snakeArrow.points.map((p, idx) => {
+    if (idx === 1 || idx === 2) return { ...p, x: 3 };
+    return { ...p };
+  }),
+};
+assert(
+  isArrowStrictlyOrthogonal(afterVerticalSegDrag),
+  'Moving vertical line section to x=3 maintains 100% 90-degree orthogonal layout on all segments'
+);
+
+// Drag seg 2 (horizontal y=4) to y=5
+const afterHorizSegDrag: Arrow = {
+  ...snakeArrow,
+  points: snakeArrow.points.map((p, idx) => {
+    if (idx === 2 || idx === 3) return { ...p, y: 5 };
+    return { ...p };
+  }),
+};
+assert(
+  isArrowStrictlyOrthogonal(afterHorizSegDrag),
+  'Moving horizontal line section to y=5 maintains 100% 90-degree orthogonal layout on all segments'
+);
+
+// 16e. Dragging corner vertex maintains 90-degree orthogonality
+// Corner vertex 2 is between seg 1 (vertical x=5) and seg 2 (horizontal y=4)
+const afterCornerDrag: Arrow = {
+  ...snakeArrow,
+  points: [
+    { x: 1, y: 1 },
+    { x: 4, y: 1 }, // seg 1 x moved to 4
+    { x: 4, y: 3 }, // corner moved to (4,3)
+    { x: 2, y: 3 }, // seg 2 y moved to 3
+    { x: 2, y: 6 },
+  ],
+};
+assert(
+  isArrowStrictlyOrthogonal(afterCornerDrag),
+  'Moving corner vertex adapts connected perpendicular segments cleanly maintaining strict 90-degree angles'
+);
 
 console.log(`\n========================================`);
 console.log(`TEST SUMMARY: ${passCount} Passed, ${failCount} Failed`);

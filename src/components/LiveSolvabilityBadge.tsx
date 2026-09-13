@@ -42,10 +42,11 @@ export const LiveSolvabilityBadge: React.FC<LiveSolvabilityBadgeProps> = ({
         title: `Solvable (${result.stepOrder.length} steps)`,
       };
     }
+    const isInvalidLevel = result.message.startsWith('Invalid Level:');
     return {
       bg: 'bg-rose-50 border-rose-300 text-rose-800 shadow-rose-100',
       icon: <AlertTriangle className="w-4 h-4 text-rose-600" />,
-      title: 'Deadlock Detected',
+      title: isInvalidLevel ? 'Invalid Arrow (Non-orthogonal)' : 'Deadlock Detected',
     };
   };
 
@@ -80,7 +81,11 @@ export const LiveSolvabilityBadge: React.FC<LiveSolvabilityBadgeProps> = ({
                   : 'bg-rose-100 text-rose-700'
               }`}
             >
-              {result.isSolvable ? 'PASSED' : 'DEADLOCKED'}
+              {result.isSolvable
+                ? 'PASSED'
+                : result.message.startsWith('Invalid Level:')
+                ? 'INVALID LEVEL'
+                : 'DEADLOCKED'}
             </span>
           </div>
 

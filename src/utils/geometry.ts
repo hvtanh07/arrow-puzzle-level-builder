@@ -471,3 +471,55 @@ export function slicePolyline(
   return cleaned;
 }
 
+/**
+ * Removes consecutive duplicate points and intermediate collinear points along orthogonal lines.
+ */
+export function cleanCollinearPoints(points: Point[]): Point[] {
+  if (points.length <= 1) return [...points];
+
+  // 1. Filter out consecutive duplicate points
+  const deduped: Point[] = [points[0]];
+  for (let i = 1; i < points.length; i++) {
+    const last = deduped[deduped.length - 1];
+    if (points[i].x !== last.x || points[i].y !== last.y) {
+      deduped.push({ ...points[i] });
+    }
+  }
+
+  if (deduped.length <= 2) return deduped;
+
+  // 2. Filter out intermediate collinear points
+  const cleaned: Point[] = [deduped[0]];
+  for (let i = 1; i < deduped.length - 1; i++) {
+    const prev = cleaned[cleaned.length - 1];
+    const cur = deduped[i];
+    const next = deduped[i + 1];
+
+    const isHoriz = prev.y === cur.y && cur.y === next.y;
+    const isVert = prev.x === cur.x && cur.x === next.x;
+
+    if (!isHoriz && !isVert) {
+      cleaned.push(cur);
+    }
+  }
+  cleaned.push(deduped[deduped.length - 1]);
+  return cleaned;
+}
+
+/**
+ * Validates that an arrow has at least 2 points and all segments are strictly orthogonal (dx=0 or dy=0, not both or diagonal).
+ */
+export function isArrowStrictlyOrthogonal(arrow: Arrow): boolean {
+  if (!arrow.points || arrow.points.length < 2) return false;
+  for (let i = 0; i < arrow.points.length - 1; i++) {
+    const p1 = arrow.points[i];
+    const p2 = arrow.points[i + 1];
+    const dx = Math.abs(p2.x - p1.x);
+    const dy = Math.abs(p2.y - p1.y);
+    if ((dx > 0 && dy > 0) || (dx === 0 && dy === 0)) {
+      return false;
+    }
+  }
+  return true;
+}
+
