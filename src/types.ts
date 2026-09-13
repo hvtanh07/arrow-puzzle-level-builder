@@ -67,4 +67,28 @@ export interface MoveAnalysis {
   blockingPartnerId?: string;
 }
 
-export type EditorTool = 'select' | 'draw' | 'erase';
+export type EditorTool = 'select' | 'draw' | 'erase' | 'prebuild';
+
+export interface SelectionArea {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+}
+
+export interface StyleProfile {
+  sourceLevelId: string;
+  sourceLevelName: string;
+  arrowCount: number;
+  avgLength: number;
+  minLength: number;
+  maxLength: number;
+  turnComplexity: {
+    straightRatio: number; // 0 turns (2 points)
+    singleTurnRatio: number; // 1 turn (3 points, L-shapes)
+    multiTurnRatio: number; // 2+ turns (4+ points, serpentine)
+  };
+  directionDistribution: Record<Direction, number>; // UP, DOWN, LEFT, RIGHT
+  colorPalette: number[]; // Unique color IDs
+  density: number; // Occupied cells / bounding box area
+}

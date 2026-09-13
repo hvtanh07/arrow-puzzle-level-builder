@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Arrow, EditorTool, GridSize, Level } from './types';
+import { Arrow, EditorTool, GridSize, Level, SelectionArea } from './types';
 import { PREMADE_LEVELS } from './data/premadeLevels';
 import { CanvasEditor } from './components/CanvasEditor';
 import { LeftLevelPanel } from './components/LeftLevelPanel';
@@ -8,6 +8,8 @@ import { PlayTestView } from './components/PlayTestView';
 import { LiveSolvabilityBadge } from './components/LiveSolvabilityBadge';
 import { solveLevel } from './utils/solver';
 import { sound } from './utils/sound';
+import { analyzeLevelStyle } from './utils/styleAnalyzer';
+import { generateStyledArrowsForArea } from './utils/prebuildGenerator';
 import {
   Play,
   Pencil,
@@ -48,6 +50,10 @@ export const App: React.FC = () => {
   const [showRays, setShowRays] = useState<boolean>(false);
   const [showCoords, setShowCoords] = useState<boolean>(true);
 
+  // Prebuild Area state & style reference level
+  const [prebuildArea, setPrebuildArea] = useState<SelectionArea | null>(null);
+  const [referenceLevelId, setReferenceLevelId] = useState<string>('');
+
   // Sound state
   const [soundEnabled, setSoundEnabled] = useState(true);
 
@@ -68,6 +74,34 @@ export const App: React.FC = () => {
   const currentLevel = useMemo(() => {
     return levels.find((l) => l.id === currentLevelId) || levels[0] || PREMADE_LEVELS[8];
   }, [levels, currentLevelId]);
+
+  // Index of current level and previous level in sequence
+  const currentIndex = levels.findIndex((l) => l.id === currentLevelId);
+  const prevLevel = currentIndex > 0 ? levels[currentIndex - 1] : levels[0];
+
+  // Set default reference level (previous level) when switching level
+  useEffect(() => {
+    const idx = levels.findIndex((l) => l.id === currentLevelId);
+    if (idx > 0) {
+      setReferenceLevelId(levels[idx - 1].id);
+    } else if (levels.length > 1) {
+      setReferenceLevelId(levels[1].id);
+    } else {
+      setReferenceLevelId(levels[0]?.id || '');
+    }
+    setPrebuildArea(null);
+  }, [currentLevelId, levels]);
+
+  // Reference level object used for style analysis
+  const referenceLevel = useMemo(() => {
+    return levels.find((l) => l.id === referenceLevelId) || prevLevel || currentLevel;
+  }, [levels, referenceLevelId, prevLevel, currentLevel]);
+
+  // Style profile of the reference level
+  const styleProfile = useMemo(() => {
+    if (!referenceLevel) return null;
+    return analyzeLevelStyle(referenceLevel);
+  }, [referenceLevel]);
 
   // Selected arrow object
   const selectedArrow = useMemo(() => {
@@ -94,6 +128,29 @@ export const App: React.FC = () => {
     setIsPreviewing(false);
     setSelectedArrowId(null);
   }, [currentLevelId]);
+
+  // Trigger procedural prebuild fill
+  const handleTriggerPrebuild = () => {
+    if (!prebuildArea) return;
+    if (!styleProfile) return;
+
+    sound.playClick();
+    const result = generateStyledArrowsForArea({
+      area: prebuildArea,
+      existingArrows: currentLevel.arrows,
+      gridSize: currentLevel.gridSize,
+      style: styleProfile,
+    });
+
+    if (result.success) {
+      sound.playVictory();
+      updateCurrentLevelArrows(result.arrows);
+      setPrebuildArea(null);
+    } else {
+      sound.playWhoosh();
+      alert(result.message);
+    }
+  };
 
   const updateCurrentLevelArrows = (newArrows: Arrow[]) => {
     const nextHistory = history.slice(0, historyIndex + 1);
@@ -377,7 +434,6 @@ export const App: React.FC = () => {
   };
 
   // Next level helper
-  const currentIndex = levels.findIndex((l) => l.id === currentLevelId);
   const hasNextLevel = currentIndex < levels.length - 1;
   const handleNextLevel = () => {
     if (hasNextLevel) {
@@ -410,6 +466,8 @@ export const App: React.FC = () => {
         setTool('draw');
       } else if (e.key.toLowerCase() === 's') {
         setTool('select');
+      } else if (e.key.toLowerCase() === 'b') {
+        setTool('prebuild');
       } else if (e.key === ' ' || e.key.toLowerCase() === 'p') {
         e.preventDefault();
         setMode((prev) => (prev === 'builder' ? 'playtest' : 'builder'));
@@ -531,6 +589,10 @@ export const App: React.FC = () => {
               showRays={showRays}
               showCoords={showCoords}
               onPlayTest={() => setMode('playtest')}
+              prebuildArea={prebuildArea}
+              onSelectPrebuildArea={setPrebuildArea}
+              onTriggerPrebuild={handleTriggerPrebuild}
+              sourceLevelName={referenceLevel?.name}
             />
           ) : (
             <PlayTestView
@@ -570,6 +632,14 @@ export const App: React.FC = () => {
           onChangeLayer={handleChangeLayer}
           onBringToFront={handleBringToFront}
           onSendToBack={handleSendToBack}
+          prebuildArea={prebuildArea}
+          onClearPrebuildArea={() => setPrebuildArea(null)}
+          onTriggerPrebuild={handleTriggerPrebuild}
+          allLevels={levels}
+          currentLevelIndex={currentIndex}
+          referenceLevelId={referenceLevelId}
+          onSelectReferenceLevelId={setReferenceLevelId}
+          styleProfile={styleProfile}
         />
       </div>
     </div>

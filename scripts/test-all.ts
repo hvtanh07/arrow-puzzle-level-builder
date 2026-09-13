@@ -9,6 +9,7 @@ import {
   analyzeArrowExit,
   splitDoubleHeadedArrow,
   checkArrowOverlaps,
+  getArrowOccupiedPoints,
 } from '../src/utils/geometry';
 
 console.log('🧪 RUNNING COMPLETE VERIFICATION TEST SUITE...\n');
@@ -312,6 +313,84 @@ const impTop = reimported.level?.arrows.find((a) => a.id === 'arrow_top');
 assert(impDouble?.isDoubleHeaded === true, 'isDoubleHeaded preserved on import');
 assert(impLinked?.linkedGroupId === 'group_alpha', 'linkedGroupId preserved on import');
 assert(impTop?.layer === 1, 'layer preserved on import');
+
+// 14. Style Analyzer Verification
+console.log('\nTest 14: Style Analyzer Verification');
+const { analyzeLevelStyle, formatStyleSummary, countArrowTurns } = await import('../src/utils/styleAnalyzer');
+
+const lvl1Style = analyzeLevelStyle(lvl1);
+assert(lvl1Style.arrowCount === 3, 'Level 1 style analysis counts 3 arrows');
+assert(lvl1Style.avgLength > 2, 'Level 1 average length is > 2 cells');
+assert(lvl1Style.turnComplexity.straightRatio > 0.5, 'Level 1 has dominant straight arrows (67%)');
+assert(lvl1Style.turnComplexity.singleTurnRatio > 0.2, 'Level 1 includes L-turn arrows (33%)');
+assert(lvl1Style.colorPalette.length >= 3, 'Level 1 color palette captures 3 colors');
+const summary1 = formatStyleSummary(lvl1Style);
+assert(typeof summary1 === 'string' && summary1.length > 0, `Style summary formatted: "${summary1}"`);
+
+const lvl6Style = analyzeLevelStyle(lvl6);
+assert(lvl6Style.turnComplexity.multiTurnRatio > 0.3, 'Level 6 style analysis reflects high serpentine winding ratio');
+
+// 15. Prebuild Generator Procedural Solvability Verification
+console.log('\nTest 15: Prebuild Generator Solvability & Constraints');
+const { generateStyledArrowsForArea } = await import('../src/utils/prebuildGenerator');
+
+// 15a. Generate in empty area with Level 1 style
+const area1: { minX: number; maxX: number; minY: number; maxY: number } = { minX: 1, maxX: 5, minY: 1, maxY: 5 };
+const prebuildRes1 = generateStyledArrowsForArea({
+  area: area1,
+  existingArrows: [],
+  gridSize: { width: 8, height: 8 },
+  style: lvl1Style,
+  maxAttempts: 30,
+});
+assert(prebuildRes1.success, 'Prebuild generator succeeds in 5x5 empty area');
+assert(prebuildRes1.newArrows.length > 0, `Generated ${prebuildRes1.newArrows.length} arrows`);
+
+// Verify normal arrows constraint: single-headed, no forced links
+for (const a of prebuildRes1.newArrows) {
+  assert(!a.isDoubleHeaded, `Arrow ${a.id} is normal (not double-headed)`);
+  assert(!a.linkedGroupId, `Arrow ${a.id} is normal (not linked)`);
+  assert(!a.layer || a.layer === 0, `Arrow ${a.id} is on base layer`);
+
+  // Verify bounded within area
+  const withinArea = a.points.every(
+    (p) => p.x >= area1.minX && p.x <= area1.maxX && p.y >= area1.minY && p.y <= area1.maxY
+  );
+  assert(withinArea, `Arrow ${a.id} vertices are strictly within marked bounding box [1..5, 1..5]`);
+}
+
+// Verify high density / space-filling coverage (>= 75%)
+const occPoints1 = new Set<string>();
+for (const a of prebuildRes1.newArrows) {
+  for (const pt of getArrowOccupiedPoints(a)) {
+    occPoints1.add(`${pt.x},${pt.y}`);
+  }
+}
+const area1Cells = (area1.maxX - area1.minX + 1) * (area1.maxY - area1.minY + 1); // 25
+const density1 = occPoints1.size / area1Cells;
+assert(density1 >= 0.75, `Prebuild generator achieves high space-filling density: ${Math.round(density1 * 100)}% coverage (${occPoints1.size}/${area1Cells} cells)`);
+
+// Verify 100% solvability and 0 overlaps
+const sol1 = solveLevel(prebuildRes1.arrows, { width: 8, height: 8 });
+assert(sol1.isSolvable, 'Generated prebuild level is 100% SOLVABLE');
+assert(!sol1.hasOverlaps, 'Generated prebuild level has 0 resting overlaps');
+assert(sol1.stepOrder.length === prebuildRes1.newArrows.length, 'All generated arrows escape successfully');
+
+// 15b. Generate inside a board with existing arrows (Level 1's board) without collision
+const area2 = { minX: 4, maxX: 7, minY: 4, maxY: 7 };
+const prebuildRes2 = generateStyledArrowsForArea({
+  area: area2,
+  existingArrows: lvl1.arrows,
+  gridSize: lvl1.gridSize,
+  style: lvl6Style,
+  maxAttempts: 30,
+});
+assert(prebuildRes2.success, 'Prebuild generator succeeds alongside existing arrows');
+assert(prebuildRes2.newArrows.length > 0, `Generated ${prebuildRes2.newArrows.length} new arrows alongside Level 1`);
+
+const sol2 = solveLevel(prebuildRes2.arrows, lvl1.gridSize);
+assert(sol2.isSolvable, 'Combined level (existing + prebuild arrows) is 100% SOLVABLE');
+assert(!sol2.hasOverlaps, 'Combined level has 0 resting overlaps');
 
 console.log(`\n========================================`);
 console.log(`TEST SUMMARY: ${passCount} Passed, ${failCount} Failed`);

@@ -1,6 +1,6 @@
 import React from 'react';
-import { Arrow, EditorTool, GridSize } from '../types';
-import { COLOR_TYPES, getColorId } from '../constants/colors';
+import { Arrow, EditorTool, GridSize, Level, SelectionArea, StyleProfile } from '../types';
+import { COLOR_TYPES, getColorId, getColorHex } from '../constants/colors';
 import {
   Pencil,
   MousePointer,
@@ -21,6 +21,7 @@ import {
   Link2,
   Unlink2,
   Layers,
+  Sparkles,
 } from 'lucide-react';
 
 interface RightToolPanelProps {
@@ -50,6 +51,14 @@ interface RightToolPanelProps {
   onChangeLayer: (delta: number, isAbsolute?: boolean) => void;
   onBringToFront: () => void;
   onSendToBack: () => void;
+  prebuildArea?: SelectionArea | null;
+  onClearPrebuildArea?: () => void;
+  onTriggerPrebuild?: () => void;
+  allLevels?: Level[];
+  currentLevelIndex?: number;
+  referenceLevelId?: string;
+  onSelectReferenceLevelId?: (id: string) => void;
+  styleProfile?: StyleProfile | null;
 }
 
 export const RightToolPanel: React.FC<RightToolPanelProps> = ({
@@ -79,6 +88,14 @@ export const RightToolPanel: React.FC<RightToolPanelProps> = ({
   onChangeLayer,
   onBringToFront,
   onSendToBack,
+  prebuildArea,
+  onClearPrebuildArea,
+  onTriggerPrebuild,
+  allLevels,
+  currentLevelIndex,
+  referenceLevelId,
+  onSelectReferenceLevelId,
+  styleProfile,
 }) => {
   return (
     <aside className="w-72 sm:w-80 h-full bg-white border-l border-slate-200 flex flex-col shrink-0 z-20 shadow-xs select-none overflow-y-auto">
@@ -114,32 +131,172 @@ export const RightToolPanel: React.FC<RightToolPanelProps> = ({
           <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">
             Tool
           </label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-1.5">
             <button
               onClick={() => onSelectTool('draw')}
-              className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl font-bold text-xs transition-all ${
+              className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl font-bold text-xs transition-all cursor-pointer ${
                 tool === 'draw'
                   ? 'bg-blue-600 text-white shadow-xs ring-2 ring-blue-400/20'
                   : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200'
               }`}
             >
-              <Pencil className="w-4 h-4" />
+              <Pencil className="w-3.5 h-3.5" />
               <span>Draw (D)</span>
             </button>
 
             <button
               onClick={() => onSelectTool('select')}
-              className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl font-bold text-xs transition-all ${
+              className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl font-bold text-xs transition-all cursor-pointer ${
                 tool === 'select'
                   ? 'bg-blue-600 text-white shadow-xs ring-2 ring-blue-400/20'
                   : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200'
               }`}
             >
-              <MousePointer className="w-4 h-4" />
+              <MousePointer className="w-3.5 h-3.5" />
               <span>Select (S)</span>
+            </button>
+
+            <button
+              onClick={() => onSelectTool('prebuild')}
+              className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                tool === 'prebuild'
+                  ? 'bg-indigo-600 text-white shadow-xs ring-2 ring-indigo-400/20'
+                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Prebuild (B)</span>
             </button>
           </div>
         </div>
+
+        {/* Prebuild Mode Card */}
+        {tool === 'prebuild' && (
+          <div className="p-3.5 bg-gradient-to-b from-indigo-50/90 to-purple-50/60 border border-indigo-200/80 rounded-2xl space-y-3 shadow-xs animate-in fade-in duration-150">
+            <div className="flex items-center justify-between pb-2 border-b border-indigo-200/60">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-900">
+                <Sparkles className="w-4 h-4 text-indigo-600" />
+                <span>Prebuild Area Fill</span>
+              </div>
+              <span className="text-[10px] font-bold text-indigo-700 bg-indigo-100/90 px-2 py-0.5 rounded-full">
+                Procedural
+              </span>
+            </div>
+
+            {/* Reference Style Level Selector */}
+            <div>
+              <label className="text-[11px] font-bold text-indigo-950 block mb-1">
+                Source Style Reference:
+              </label>
+              {allLevels && allLevels.length > 0 && onSelectReferenceLevelId ? (
+                <select
+                  value={referenceLevelId}
+                  onChange={(e) => onSelectReferenceLevelId(e.target.value)}
+                  className="w-full text-xs font-semibold bg-white border border-indigo-200 rounded-xl px-2.5 py-1.5 text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-indigo-400 cursor-pointer"
+                >
+                  {allLevels.map((lvl, idx) => {
+                    const isPrev =
+                      currentLevelIndex !== undefined && idx === currentLevelIndex - 1;
+                    return (
+                      <option key={lvl.id} value={lvl.id}>
+                        {isPrev ? `★ Previous: ${lvl.name}` : lvl.name}
+                      </option>
+                    );
+                  })}
+                </select>
+              ) : (
+                <div className="text-xs text-slate-600 bg-white p-2 rounded-xl border border-indigo-100">
+                  {styleProfile?.sourceLevelName || 'Previous Level'}
+                </div>
+              )}
+            </div>
+
+            {/* Style Profile Details */}
+            {styleProfile && (
+              <div className="bg-white/90 p-2.5 rounded-xl border border-indigo-100 text-[11px] space-y-1.5 shadow-2xs">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-indigo-500">
+                  Analyzed Design Style
+                </div>
+                <div className="grid grid-cols-2 gap-1 text-slate-600">
+                  <div>
+                    <span className="text-slate-400">Avg Length: </span>
+                    <b className="text-slate-800">{styleProfile.avgLength} cells</b>
+                  </div>
+                  <div>
+                    <span className="text-slate-400">Total Arrows: </span>
+                    <b className="text-slate-800">{styleProfile.arrowCount}</b>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 pt-1 border-t border-indigo-50 text-[10px]">
+                  <span className="text-slate-400">Complexity:</span>
+                  <span className="font-semibold text-slate-700">
+                    {Math.round(styleProfile.turnComplexity.straightRatio * 100)}% Straight •{' '}
+                    {Math.round(styleProfile.turnComplexity.singleTurnRatio * 100)}% L-Hook •{' '}
+                    {Math.round(styleProfile.turnComplexity.multiTurnRatio * 100)}% Winding
+                  </span>
+                </div>
+
+                {/* Color swatches */}
+                {styleProfile.colorPalette.length > 0 && (
+                  <div className="flex items-center gap-1.5 pt-1">
+                    <span className="text-slate-400 text-[10px]">Colors:</span>
+                    <div className="flex items-center gap-1">
+                      {styleProfile.colorPalette.map((cid) => (
+                        <div
+                          key={cid}
+                          className="w-3.5 h-3.5 rounded-full border border-black/10 shadow-2xs"
+                          style={{ backgroundColor: getColorHex(cid) }}
+                          title={`Color ${cid}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Selection Area Status & Fill CTA */}
+            <div className="p-2.5 bg-white/90 rounded-xl border border-indigo-100 shadow-2xs">
+              {prebuildArea ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-700">Marked Area:</span>
+                    <span className="text-xs font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-200/60">
+                      {prebuildArea.maxX - prebuildArea.minX + 1} × {prebuildArea.maxY - prebuildArea.minY + 1} ({ (prebuildArea.maxX - prebuildArea.minX + 1) * (prebuildArea.maxY - prebuildArea.minY + 1) } cells)
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 pt-1">
+                    <button
+                      onClick={onTriggerPrebuild}
+                      className="flex-1 py-2 px-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-98"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 fill-current" />
+                      <span>Fill Area with Style</span>
+                    </button>
+                    {onClearPrebuildArea && (
+                      <button
+                        onClick={onClearPrebuildArea}
+                        className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-colors cursor-pointer"
+                        title="Clear Selection Area"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-2.5 text-xs text-slate-500 space-y-1">
+                  <p className="font-bold text-indigo-950">Drag on canvas to mark area</p>
+                  <p className="text-[10px] text-slate-400">
+                    Click & drag across grid dots to select the bounding box to fill
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* 8 Colors Selection */}
         <div>

@@ -100,13 +100,15 @@ arrow puzzle level builder/
     ├── utils/
     │   ├── geometry.ts          # Direction vectors, discrete point rasterization, ray checks
     │   ├── solver.ts            # Real-time greedy clearance solver & deadlock detector
+    │   ├── styleAnalyzer.ts     # Analyzes level style (lengths, turns, directions, colors, density)
+    │   ├── prebuildGenerator.ts # Procedural retrograde solvable area synthesis engine
     │   ├── jsonHandler.ts       # Strict minimal JSON export/import & validator
     │   └── sound.ts             # Web Audio API procedural sound synthesizer
     └── components/
         ├── ArrowRenderer.tsx    # Vector SVG polyline & arrowhead renderer with 3D shadows
         ├── CanvasEditor.tsx     # Center interactive canvas with zoom, pan, and orthogonal drawing
         ├── LeftLevelPanel.tsx   # Persistent left sidebar for level list management
-        ├── RightToolPanel.tsx   # Persistent right sidebar for tools, 8 colors, and grid inputs
+        ├── RightToolPanel.tsx   # Persistent right sidebar for tools, prebuild, 8 colors, and grid inputs
         ├── LiveSolvabilityBadge.tsx # Top bar badge showing solvability & auto-solve preview
         └── PlayTestView.tsx     # Mobile casual playtest simulator with 3 boosters
 ```

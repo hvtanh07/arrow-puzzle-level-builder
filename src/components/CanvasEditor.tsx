@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Arrow, EditorTool, GridSize, Point, SolvabilityResult } from '../types';
+import { Arrow, EditorTool, GridSize, Point, SelectionArea, SolvabilityResult } from '../types';
 import { ArrowRenderer } from './ArrowRenderer';
 import {
   analyzeArrowExit,
@@ -10,7 +10,7 @@ import {
 } from '../utils/geometry';
 import { getColorHex } from '../constants/colors';
 import { sound } from '../utils/sound';
-import { Check, X, ZoomIn, ZoomOut, Maximize2, Move } from 'lucide-react';
+import { Check, X, ZoomIn, ZoomOut, Maximize2, Move, Sparkles } from 'lucide-react';
 
 interface CanvasEditorProps {
   gridSize: GridSize;
@@ -24,6 +24,10 @@ interface CanvasEditorProps {
   showRays: boolean;
   showCoords: boolean;
   onPlayTest: () => void;
+  prebuildArea: SelectionArea | null;
+  onSelectPrebuildArea: (area: SelectionArea | null) => void;
+  onTriggerPrebuild?: () => void;
+  sourceLevelName?: string;
 }
 
 export const CanvasEditor: React.FC<CanvasEditorProps> = ({
@@ -38,10 +42,18 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
   showRays,
   showCoords,
   onPlayTest,
+  prebuildArea,
+  onSelectPrebuildArea,
+  onTriggerPrebuild,
+  sourceLevelName,
 }) => {
   // Drawing state
   const [drawPoints, setDrawPoints] = useState<Point[]>([]);
   const [hoverGridPos, setHoverGridPos] = useState<Point | null>(null);
+
+  // Prebuild drag area state
+  const [dragAreaStart, setDragAreaStart] = useState<Point | null>(null);
+  const [dragAreaCurrent, setDragAreaCurrent] = useState<Point | null>(null);
 
   // Dragging vertex state
   const [dragVertex, setDragVertex] = useState<{
@@ -120,11 +132,17 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
   };
 
   // Tool change listener: clear drawing when switching away from draw mode
+  // Tool change listener: clear drawing when switching away from draw mode
   useEffect(() => {
     if (tool !== 'draw') {
       setDrawPoints([]);
-    } else {
+    }
+    if (tool !== 'select') {
       onSelectArrowId(null);
+    }
+    if (tool !== 'prebuild') {
+      setDragAreaStart(null);
+      setDragAreaCurrent(null);
     }
   }, [tool]);
 
@@ -139,10 +157,22 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
         }
         setDragArrow(null);
       }
+      if (dragAreaStart) {
+        if (dragAreaCurrent) {
+          const minX = Math.min(dragAreaStart.x, dragAreaCurrent.x);
+          const maxX = Math.max(dragAreaStart.x, dragAreaCurrent.x);
+          const minY = Math.min(dragAreaStart.y, dragAreaCurrent.y);
+          const maxY = Math.max(dragAreaStart.y, dragAreaCurrent.y);
+          onSelectPrebuildArea({ minX, maxX, minY, maxY });
+          sound.playPop();
+        }
+        setDragAreaStart(null);
+        setDragAreaCurrent(null);
+      }
     };
     window.addEventListener('mouseup', handleGlobalMouseUp);
     return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
-  }, [dragVertex, dragArrow]);
+  }, [dragVertex, dragArrow, dragAreaStart, dragAreaCurrent, onSelectPrebuildArea]);
 
   // Keyboard shortcut listener for finish / cancel
   useEffect(() => {
@@ -155,11 +185,23 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
       } else if (e.key === 'Escape') {
         cancelDrawing();
         onSelectArrowId(null);
+        onSelectPrebuildArea(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [drawPoints, activeColorId, hoverGridPos, tool]);
+  }, [drawPoints, activeColorId, hoverGridPos, tool, onSelectPrebuildArea]);
+
+  // Active marked area (during active drag or committed prebuildArea)
+  const activeArea: SelectionArea | null =
+    dragAreaStart && dragAreaCurrent
+      ? {
+          minX: Math.min(dragAreaStart.x, dragAreaCurrent.x),
+          maxX: Math.max(dragAreaStart.x, dragAreaCurrent.x),
+          minY: Math.min(dragAreaStart.y, dragAreaCurrent.y),
+          maxY: Math.max(dragAreaStart.y, dragAreaCurrent.y),
+        }
+      : prebuildArea;
 
   // Handle Arrow Mouse Down (Select mode: select & start drag-move)
   const handleArrowMouseDown = (arrow: Arrow, e: React.MouseEvent) => {
@@ -194,6 +236,14 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 
       setIsPanning(true);
       panStartRef.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
+      return;
+    }
+
+    // Prebuild mode: start dragging selection rectangle
+    if (tool === 'prebuild' && e.button === 0) {
+      const { gx, gy } = clientToGrid(e);
+      setDragAreaStart({ x: gx, y: gy });
+      setDragAreaCurrent({ x: gx, y: gy });
     }
   };
 
@@ -209,6 +259,12 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 
     const { gx, gy } = clientToGrid(e);
     setHoverGridPos({ x: gx, y: gy });
+
+    // If dragging prebuild selection rectangle
+    if (tool === 'prebuild' && dragAreaStart) {
+      setDragAreaCurrent({ x: gx, y: gy });
+      return;
+    }
 
     // If dragging single vertex handle
     if (dragVertex && tool === 'select') {
@@ -272,6 +328,18 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
         sound.playPop();
       }
       setDragArrow(null);
+    }
+    if (tool === 'prebuild' && dragAreaStart) {
+      if (dragAreaCurrent) {
+        const minX = Math.min(dragAreaStart.x, dragAreaCurrent.x);
+        const maxX = Math.max(dragAreaStart.x, dragAreaCurrent.x);
+        const minY = Math.min(dragAreaStart.y, dragAreaCurrent.y);
+        const maxY = Math.max(dragAreaStart.y, dragAreaCurrent.y);
+        onSelectPrebuildArea({ minX, maxX, minY, maxY });
+        sound.playPop();
+      }
+      setDragAreaStart(null);
+      setDragAreaCurrent(null);
     }
   };
 
@@ -535,6 +603,39 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
         </div>
       )}
 
+      {/* Prebuild active banner */}
+      {tool === 'prebuild' && (
+        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white px-4 py-2 text-xs font-semibold flex items-center justify-between shadow-md z-10 animate-in slide-in-from-top-2 duration-150">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+            <span>
+              <b>Prebuild Mode:</b> Drag on canvas to mark area to fill with style from <b>{sourceLevelName || 'Previous Level'}</b>.
+              {activeArea && ` (Selected: ${activeArea.maxX - activeArea.minX + 1} × ${activeArea.maxY - activeArea.minY + 1} area)`}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {activeArea && onTriggerPrebuild && (
+              <button
+                onClick={onTriggerPrebuild}
+                className="px-3 py-1 bg-white text-indigo-700 hover:bg-indigo-50 rounded-lg font-bold shadow-xs text-xs flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5 fill-indigo-600" />
+                Fill Area with Style
+              </button>
+            )}
+            {activeArea && (
+              <button
+                onClick={() => onSelectPrebuildArea(null)}
+                className="p-1 text-indigo-200 hover:text-white rounded-lg cursor-pointer"
+                title="Clear Area Selection (Esc)"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Floating Zoom & Pan Controls (Bottom-Left) */}
       <div className="absolute bottom-5 left-5 z-20 flex items-center gap-1.5 bg-white/90 backdrop-blur-md px-2 py-1.5 rounded-2xl shadow-lg border border-slate-200/80">
         <button
@@ -574,6 +675,10 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
           <span>
             <b>Draw Mode:</b> Left-click Head → Left-click Points → <b>Right-click</b> to End
           </span>
+        ) : tool === 'prebuild' ? (
+          <span>
+            <b>Prebuild Mode:</b> Drag box to mark area • Fills with previous level style
+          </span>
         ) : (
           <span>
             <b>Select Mode:</b> Drag arrow to move & release to place • Click to select
@@ -596,7 +701,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
             ref={svgRef}
             width={totalSvgWidth}
             height={totalSvgHeight}
-            className={tool === 'draw' ? 'cursor-crosshair block' : 'cursor-default block'}
+            className={tool === 'draw' || tool === 'prebuild' ? 'cursor-crosshair block' : 'cursor-default block'}
             onClick={handleCanvasClick}
             onContextMenu={(e) => {
               e.preventDefault();
@@ -649,16 +754,74 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 
             {/* Grid Intersections / Dots (Perfect symmetric spacing) */}
             {Array.from({ length: gridSize.width }).map((_, col) =>
-              Array.from({ length: gridSize.height }).map((_, row) => (
-                <circle
-                  key={`dot-${col}-${row}`}
-                  cx={padding + col * cellSize}
-                  cy={padding + row * cellSize}
-                  r={3}
-                  fill="#cbd5e1"
-                  className="pointer-events-none"
+              Array.from({ length: gridSize.height }).map((_, row) => {
+                const inPrebuild =
+                  activeArea &&
+                  col >= activeArea.minX &&
+                  col <= activeArea.maxX &&
+                  row >= activeArea.minY &&
+                  row <= activeArea.maxY;
+
+                return (
+                  <circle
+                    key={`dot-${col}-${row}`}
+                    cx={padding + col * cellSize}
+                    cy={padding + row * cellSize}
+                    r={inPrebuild ? 4.5 : 3}
+                    fill={inPrebuild ? '#6366f1' : '#cbd5e1'}
+                    className="pointer-events-none transition-all"
+                  />
+                );
+              })
+            )}
+
+            {/* Prebuild Selection Box */}
+            {activeArea && (
+              <g className="pointer-events-none">
+                {/* Translucent fill & glowing dashed border */}
+                <rect
+                  x={padding + activeArea.minX * cellSize - cellSize * 0.42}
+                  y={padding + activeArea.minY * cellSize - cellSize * 0.42}
+                  width={(activeArea.maxX - activeArea.minX) * cellSize + cellSize * 0.84}
+                  height={(activeArea.maxY - activeArea.minY) * cellSize + cellSize * 0.84}
+                  rx={14}
+                  fill="#6366f1"
+                  fillOpacity={0.14}
+                  stroke="#4f46e5"
+                  strokeWidth={2.5}
+                  strokeDasharray="6 4"
                 />
-              ))
+
+                {/* Dimension & Status Badge */}
+                <g
+                  transform={`translate(${
+                    padding + activeArea.minX * cellSize - cellSize * 0.42
+                  }, ${
+                    Math.max(8, padding + activeArea.minY * cellSize - cellSize * 0.42 - 24)
+                  })`}
+                >
+                  <rect
+                    x={0}
+                    y={0}
+                    width={84}
+                    height={20}
+                    rx={10}
+                    fill="#4f46e5"
+                    style={{ filter: 'drop-shadow(0 2px 4px rgba(79, 70, 229, 0.35))' }}
+                  />
+                  <text
+                    x={42}
+                    y={14}
+                    textAnchor="middle"
+                    fill="#ffffff"
+                    fontSize="11"
+                    fontWeight="bold"
+                    fontFamily="sans-serif"
+                  >
+                    {activeArea.maxX - activeArea.minX + 1} × {activeArea.maxY - activeArea.minY + 1} Area
+                  </text>
+                </g>
+              </g>
             )}
 
             {/* Coordinate numbers */}
