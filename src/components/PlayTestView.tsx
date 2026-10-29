@@ -3,6 +3,7 @@ import { Arrow, Level, Point } from '../types';
 import { ArrowRenderer } from './ArrowRenderer';
 import {
   analyzeArrowExit,
+  buildBoardIndex,
   getDirectionVector,
   getHeadDirection,
   getReverseHeadDirection,
@@ -286,8 +287,9 @@ export const PlayTestView: React.FC<PlayTestViewProps> = ({
     sound.playPop();
 
     // Find any currently unblocked arrow
+    const board = buildBoardIndex(activeArrows);
     const free = activeArrows.find(
-      (a) => !analyzeArrowExit(a, activeArrows, level.gridSize).isBlocked
+      (a) => !analyzeArrowExit(a, activeArrows, level.gridSize, board).isBlocked
     );
 
     if (free) {
@@ -315,9 +317,10 @@ export const PlayTestView: React.FC<PlayTestViewProps> = ({
   const boardHeight = level.gridSize.height * cellSize + padding * 2;
 
   // Compute highlighted path trajectories for all active arrows
-  const arrowTrajectories = showPathsHighlight
+  const trajectoryBoard = showPathsHighlight ? buildBoardIndex(activeArrows) : null;
+  const arrowTrajectories = trajectoryBoard
     ? activeArrows.map((arr) => {
-        const analysis = analyzeArrowExit(arr, activeArrows, level.gridSize);
+        const analysis = analyzeArrowExit(arr, activeArrows, level.gridSize, trajectoryBoard);
         const head = arr.points[arr.points.length - 1];
         const dir = getHeadDirection(arr);
         const v = getDirectionVector(dir);

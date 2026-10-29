@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Level } from '../types';
-import { solveLevel } from '../utils/solver';
+import { solveLevelCached } from '../utils/solver';
 import { exportLevelToJson, exportAllLevelsToJson, importLevelFromJson } from '../utils/jsonHandler';
 import { sound } from '../utils/sound';
 import {
@@ -249,7 +249,7 @@ export const LevelManager: React.FC<LevelManagerProps> = ({
         <div className="flex-1 overflow-y-auto p-4 space-y-2.5 divide-y divide-slate-100">
           {filteredLevels.map((lvl) => {
             const isCurrent = lvl.id === currentLevelId;
-            const solv = solveLevel(lvl.arrows, lvl.gridSize);
+            const solv = solveLevelCached(lvl.arrows, lvl.gridSize);
 
             return (
               <div

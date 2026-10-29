@@ -1,5 +1,5 @@
 import { Arrow, GridSize, SolvabilityResult } from '../types';
-import { analyzeArrowExit, checkArrowOverlaps } from './geometry';
+import { analyzeArrowExit, buildBoardIndex, checkArrowOverlaps } from './geometry';
 
 export function solveLevel(arrows: Arrow[], gridSize: GridSize): SolvabilityResult {
   if (arrows.length === 0) {
@@ -54,8 +54,9 @@ export function solveLevel(arrows: Arrow[], gridSize: GridSize): SolvabilityResu
 
   // 2. Build initial blocking graph for diagnostics
   const initialBlockingGraph: Record<string, string[]> = {};
+  const initialBoard = buildBoardIndex(arrows);
   for (const arrow of arrows) {
-    const analysis = analyzeArrowExit(arrow, arrows, gridSize);
+    const analysis = analyzeArrowExit(arrow, arrows, gridSize, initialBoard);
     initialBlockingGraph[arrow.id] = analysis.blockedByArrowIds;
   }
 
@@ -65,8 +66,9 @@ export function solveLevel(arrows: Arrow[], gridSize: GridSize): SolvabilityResu
 
   while (remaining.length > 0) {
     // Find all arrows that can currently escape
+    const board = buildBoardIndex(remaining);
     const freeArrows = remaining.filter((arrow) => {
-      const analysis = analyzeArrowExit(arrow, remaining, gridSize);
+      const analysis = analyzeArrowExit(arrow, remaining, gridSize, board);
       return !analysis.isBlocked;
     });
 
@@ -77,7 +79,7 @@ export function solveLevel(arrows: Arrow[], gridSize: GridSize): SolvabilityResu
       // Filter blocking graph for remaining arrows
       const activeBlockingGraph: Record<string, string[]> = {};
       for (const arrow of remaining) {
-        const analysis = analyzeArrowExit(arrow, remaining, gridSize);
+        const analysis = analyzeArrowExit(arrow, remaining, gridSize, board);
         activeBlockingGraph[arrow.id] = analysis.blockedByArrowIds;
       }
 
@@ -121,4 +123,18 @@ export function solveLevel(arrows: Arrow[], gridSize: GridSize): SolvabilityResu
       ? `Warning: Clearance sequence found (${stepOrder.length} steps), but illegal co-planar collision(s) detected.`
       : `Solvable in ${stepOrder.length} steps! (${stepOrder.join(' → ')})`,
   };
+}
+
+// Results keyed by the (immutable) arrows array, so lists of many levels only
+// re-solve the level that actually changed.
+const solveCache = new WeakMap<Arrow[], { width: number; height: number; result: SolvabilityResult }>();
+
+export function solveLevelCached(arrows: Arrow[], gridSize: GridSize): SolvabilityResult {
+  const cached = solveCache.get(arrows);
+  if (cached && cached.width === gridSize.width && cached.height === gridSize.height) {
+    return cached.result;
+  }
+  const result = solveLevel(arrows, gridSize);
+  solveCache.set(arrows, { width: gridSize.width, height: gridSize.height, result });
+  return result;
 }

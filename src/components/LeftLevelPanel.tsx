@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Level } from '../types';
-import { solveLevel } from '../utils/solver';
+import { solveLevelCached } from '../utils/solver';
 import { exportLevelToJson, exportAllLevelsToJson, importLevelFromJson } from '../utils/jsonHandler';
 import { sound } from '../utils/sound';
 import {
@@ -323,7 +323,7 @@ export const LeftLevelPanel: React.FC<LeftLevelPanelProps> = ({
       <div className="flex-1 overflow-y-auto p-2.5 space-y-2">
         {filteredLevels.map((lvl) => {
           const isCurrent = lvl.id === currentLevelId;
-          const solv = solveLevel(lvl.arrows, lvl.gridSize);
+          const solv = solveLevelCached(lvl.arrows, lvl.gridSize);
           const masterIndex = levels.findIndex((l) => l.id === lvl.id);
           const isFirst = masterIndex === 0;
           const isLast = masterIndex === levels.length - 1;
