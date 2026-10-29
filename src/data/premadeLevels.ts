@@ -9765,34 +9765,6 @@ export const PREMADE_LEVELS: Level[] = [
         "isDoubleHeaded": true
       },
       {
-        "id": "arrow_u2y6",
-        "color": 0,
-        "points": [
-          {
-            "x": 16,
-            "y": 4
-          },
-          {
-            "x": 0,
-            "y": 4
-          }
-        ]
-      },
-      {
-        "id": "arrow_u7ex",
-        "color": 0,
-        "points": [
-          {
-            "x": 0,
-            "y": 8
-          },
-          {
-            "x": 16,
-            "y": 8
-          }
-        ]
-      },
-      {
         "id": "arrow_ucoc",
         "color": 3,
         "points": [
@@ -9820,8 +9792,7 @@ export const PREMADE_LEVELS: Level[] = [
             "x": 1,
             "y": 14
           }
-        ],
-        "isDoubleHeaded": true
+        ]
       },
       {
         "id": "arrow_uh5z",
@@ -9851,8 +9822,7 @@ export const PREMADE_LEVELS: Level[] = [
             "x": 15,
             "y": 14
           }
-        ],
-        "isDoubleHeaded": true
+        ]
       },
       {
         "id": "arrow_uk0l",
@@ -9905,11 +9875,25 @@ export const PREMADE_LEVELS: Level[] = [
         "points": [
           {
             "x": 8,
+            "y": 9
+          },
+          {
+            "x": 8,
+            "y": 2
+          }
+        ]
+      },
+      {
+        "id": "arrow_y8sp",
+        "color": 0,
+        "points": [
+          {
+            "x": 8,
             "y": 15
           },
           {
             "x": 8,
-            "y": 1
+            "y": 12
           }
         ]
       },
@@ -9918,7 +9902,7 @@ export const PREMADE_LEVELS: Level[] = [
         "color": 4,
         "points": [
           {
-            "x": 6,
+            "x": 2,
             "y": 6
           },
           {
@@ -9932,7 +9916,7 @@ export const PREMADE_LEVELS: Level[] = [
         "color": 4,
         "points": [
           {
-            "x": 10,
+            "x": 14,
             "y": 6
           },
           {
@@ -9982,28 +9966,6 @@ export const PREMADE_LEVELS: Level[] = [
           {
             "x": 14,
             "y": 0
-          }
-        ]
-      },
-      {
-        "id": "arrow_wu07",
-        "color": 2,
-        "points": [
-          {
-            "x": 9,
-            "y": 2
-          },
-          {
-            "x": 9,
-            "y": 3
-          },
-          {
-            "x": 7,
-            "y": 3
-          },
-          {
-            "x": 7,
-            "y": 2
           }
         ]
       },
@@ -10167,8 +10129,7 @@ export const PREMADE_LEVELS: Level[] = [
             "x": 0,
             "y": 5
           }
-        ],
-        "isDoubleHeaded": true
+        ]
       },
       {
         "id": "arrow_zrl0",
@@ -10190,8 +10151,105 @@ export const PREMADE_LEVELS: Level[] = [
             "x": 16,
             "y": 5
           }
-        ],
-        "isDoubleHeaded": true
+        ]
+      },
+      {
+        "id": "arrow_u2y6",
+        "color": 0,
+        "points": [
+          {
+            "x": 3,
+            "y": 4
+          },
+          {
+            "x": 0,
+            "y": 4
+          }
+        ]
+      },
+      {
+        "id": "arrow_y2lr",
+        "color": 0,
+        "points": [
+          {
+            "x": 13,
+            "y": 4
+          },
+          {
+            "x": 16,
+            "y": 4
+          }
+        ]
+      },
+      {
+        "id": "arrow_u7ex",
+        "color": 0,
+        "points": [
+          {
+            "x": 3,
+            "y": 8
+          },
+          {
+            "x": 0,
+            "y": 8
+          }
+        ]
+      },
+      {
+        "id": "arrow_y7rr",
+        "color": 0,
+        "points": [
+          {
+            "x": 13,
+            "y": 8
+          },
+          {
+            "x": 16,
+            "y": 8
+          }
+        ]
+      },
+      {
+        "id": "arrow_ys04",
+        "color": 5,
+        "points": [
+          {
+            "x": 9,
+            "y": 4
+          },
+          {
+            "x": 7,
+            "y": 4
+          }
+        ]
+      },
+      {
+        "id": "arrow_ys06",
+        "color": 5,
+        "points": [
+          {
+            "x": 7,
+            "y": 6
+          },
+          {
+            "x": 9,
+            "y": 6
+          }
+        ]
+      },
+      {
+        "id": "arrow_ys08",
+        "color": 5,
+        "points": [
+          {
+            "x": 9,
+            "y": 8
+          },
+          {
+            "x": 7,
+            "y": 8
+          }
+        ]
       }
     ]
   },
