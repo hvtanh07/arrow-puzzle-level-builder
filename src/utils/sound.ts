@@ -1,4 +1,4 @@
-import trainHornUrl from '../assets/train_horn.mp3';
+import trainMoveUrl from '../assets/train_move.mp3';
 
 class SoundManager {
   private ctx: AudioContext | null = null;
@@ -41,10 +41,10 @@ class SoundManager {
     osc.stop(now + 0.3);
   }
 
-  playTrainHorn() {
+  playTrainExit() {
     if (!this.enabled) return;
     // Fresh element per call so quick consecutive exits can overlap
-    const audio = new Audio(trainHornUrl);
+    const audio = new Audio(trainMoveUrl);
     audio.volume = 0.6;
     audio.play().catch(() => {});
   }
