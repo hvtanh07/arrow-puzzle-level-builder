@@ -163,7 +163,6 @@ export const PlayTestView: React.FC<PlayTestViewProps> = ({
 
     // ALL TARGET ARROWS UNBLOCKED! ESCAPE!
     sound.playWhoosh();
-    sound.playTrainHorn();
     setHintArrowId(null);
 
     const exitDist = Math.max(level.gridSize.width, level.gridSize.height) + 10;
@@ -261,6 +260,8 @@ export const PlayTestView: React.FC<PlayTestViewProps> = ({
         // Animation complete!
         animFrameRef.current = null;
         setEscapingAnimState(null);
+        // Train sound only once the train has run off-screen
+        sound.playTrainExit();
 
         const targetIds = new Set(targetArrows.map((a) => a.id));
         const remaining = activeArrows.filter((a) => !targetIds.has(a.id));
