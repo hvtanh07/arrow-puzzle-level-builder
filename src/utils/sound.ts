@@ -41,12 +41,45 @@ class SoundManager {
     osc.stop(now + 0.3);
   }
 
-  playTrainExit() {
-    if (!this.enabled) return;
-    // Fresh element per call so quick consecutive exits can overlap
-    const audio = new Audio(trainMoveUrl);
-    audio.volume = 0.6;
-    audio.play().catch(() => {});
+  // Decoded once up front so the train sound starts with no load delay
+  private trainBuffer: AudioBuffer | null = null;
+  private trainBufferLoading = false;
+
+  preloadTrain() {
+    const ctx = this.getContext();
+    if (!ctx || this.trainBuffer || this.trainBufferLoading) return;
+    this.trainBufferLoading = true;
+    fetch(trainMoveUrl)
+      .then((res) => res.arrayBuffer())
+      .then((data) => ctx.decodeAudioData(data))
+      .then((buffer) => {
+        this.trainBuffer = buffer;
+      })
+      .catch(() => {
+        this.trainBufferLoading = false;
+      });
+  }
+
+  playTrain() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    if (!this.trainBuffer) {
+      // Not decoded yet: fall back to a media element and keep loading
+      this.preloadTrain();
+      const audio = new Audio(trainMoveUrl);
+      audio.volume = 0.6;
+      audio.play().catch(() => {});
+      return;
+    }
+
+    const source = ctx.createBufferSource();
+    const gain = ctx.createGain();
+    source.buffer = this.trainBuffer;
+    gain.gain.value = 0.6;
+    source.connect(gain);
+    gain.connect(ctx.destination);
+    source.start();
   }
 
   playBump() {
