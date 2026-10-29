@@ -163,6 +163,7 @@ export const PlayTestView: React.FC<PlayTestViewProps> = ({
 
     // ALL TARGET ARROWS UNBLOCKED! ESCAPE!
     sound.playWhoosh();
+    sound.playTrainHorn();
     setHintArrowId(null);
 
     const exitDist = Math.max(level.gridSize.width, level.gridSize.height) + 10;

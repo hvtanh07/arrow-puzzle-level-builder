@@ -1,3 +1,5 @@
+import trainHornUrl from '../assets/train_horn.mp3';
+
 class SoundManager {
   private ctx: AudioContext | null = null;
   public enabled: boolean = true;
@@ -37,6 +39,14 @@ class SoundManager {
 
     osc.start(now);
     osc.stop(now + 0.3);
+  }
+
+  playTrainHorn() {
+    if (!this.enabled) return;
+    // Fresh element per call so quick consecutive exits can overlap
+    const audio = new Audio(trainHornUrl);
+    audio.volume = 0.6;
+    audio.play().catch(() => {});
   }
 
   playBump() {
