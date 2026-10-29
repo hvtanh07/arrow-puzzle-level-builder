@@ -103,13 +103,44 @@ export function isPointInBounds(point: Point, gridSize: GridSize): boolean {
 }
 
 /**
+ * Precomputed occupancy of a set of arrows, so exit checks for many arrows
+ * against the same set don't rebuild the board each time.
+ */
+export interface BoardIndex {
+  // cell key -> occupying arrows, in allArrows order
+  cells: Map<string, { id: string; layer: number }[]>;
+  layerById: Map<string, number>;
+}
+
+export function buildBoardIndex(allArrows: Arrow[]): BoardIndex {
+  const layerById = new Map<string, number>();
+  allArrows.forEach((a, index) => {
+    // First occurrence wins, matching getEffectiveLayer's findIndex
+    if (!layerById.has(a.id)) layerById.set(a.id, (a.layer ?? 0) * 1000 + index);
+  });
+
+  const cells = new Map<string, { id: string; layer: number }[]>();
+  for (const a of allArrows) {
+    const layer = layerById.get(a.id)!;
+    for (const p of getArrowOccupiedPoints(a)) {
+      const key = `${p.x},${p.y}`;
+      const list = cells.get(key);
+      if (list) list.push({ id: a.id, layer });
+      else cells.set(key, [{ id: a.id, layer }]);
+    }
+  }
+  return { cells, layerById };
+}
+
+/**
  * Analyzes whether an arrow itself is blocked (forward head ray,
  * reverse head ray for 2-headed arrows, or pinned down by a top layer arrow).
  */
 export function analyzeIndividualArrowExit(
   arrow: Arrow,
   allArrows: Arrow[],
-  gridSize: GridSize
+  gridSize: GridSize,
+  board: BoardIndex = buildBoardIndex(allArrows)
 ): {
   arrowId: string;
   isBlocked: boolean;
@@ -124,24 +155,30 @@ export function analyzeIndividualArrowExit(
     return { arrowId: arrow.id, isBlocked: false, blockedByArrowIds: [] };
   }
 
-  const otherArrows = allArrows.filter((a) => a.id !== arrow.id);
-  const pointToArrowId = new Map<string, string>();
-  const pointToTopArrowId = new Map<string, string>();
+  const myEffectiveLayer = board.layerById.get(arrow.id) ?? (arrow.layer ?? 0) * 1000;
 
-  const myEffectiveLayer = getEffectiveLayer(arrow, allArrows);
-
-  for (const other of otherArrows) {
-    const occupied = getArrowOccupiedPoints(other);
-    const otherEffectiveLayer = getEffectiveLayer(other, allArrows);
-    for (const p of occupied) {
-      const key = `${p.x},${p.y}`;
-      pointToArrowId.set(key, other.id);
-      // Element 3: If other arrow has higher effective layer, it pins anything beneath it
-      if (otherEffectiveLayer > myEffectiveLayer) {
-        pointToTopArrowId.set(key, other.id);
+  // Topmost-listed other arrow on a cell (the last one in allArrows order)
+  const pointToArrowId = {
+    get(key: string): string | undefined {
+      const list = board.cells.get(key);
+      if (!list) return undefined;
+      for (let i = list.length - 1; i >= 0; i--) {
+        if (list[i].id !== arrow.id) return list[i].id;
       }
-    }
-  }
+      return undefined;
+    },
+  };
+  // Element 3: If other arrow has higher effective layer, it pins anything beneath it
+  const pointToTopArrowId = {
+    get(key: string): string | undefined {
+      const list = board.cells.get(key);
+      if (!list) return undefined;
+      for (let i = list.length - 1; i >= 0; i--) {
+        if (list[i].id !== arrow.id && list[i].layer > myEffectiveLayer) return list[i].id;
+      }
+      return undefined;
+    },
+  };
 
   const blockedBySet = new Set<string>();
   let isBlockedByTopLayer = false;
@@ -231,7 +268,8 @@ export function analyzeIndividualArrowExit(
 export function analyzeArrowExit(
   arrow: Arrow,
   allArrows: Arrow[],
-  gridSize: GridSize
+  gridSize: GridSize,
+  board: BoardIndex = buildBoardIndex(allArrows)
 ): {
   arrowId: string;
   isBlocked: boolean;
@@ -244,7 +282,7 @@ export function analyzeArrowExit(
   isBlockedByLinkedGroup?: boolean;
   blockingPartnerId?: string;
 } {
-  const selfAnalysis = analyzeIndividualArrowExit(arrow, allArrows, gridSize);
+  const selfAnalysis = analyzeIndividualArrowExit(arrow, allArrows, gridSize, board);
 
   // Element 2: Linked arrows group check
   if (arrow.linkedGroupId) {
@@ -257,7 +295,7 @@ export function analyzeArrowExit(
     let blockingPartnerId: string | undefined;
 
     for (const partner of linkedPartners) {
-      const partnerAnalysis = analyzeIndividualArrowExit(partner, allArrows, gridSize);
+      const partnerAnalysis = analyzeIndividualArrowExit(partner, allArrows, gridSize, board);
       if (partnerAnalysis.isBlocked) {
         isBlockedByLinkedGroup = true;
         if (!blockingPartnerId) blockingPartnerId = partner.id;

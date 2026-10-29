@@ -3,6 +3,7 @@ import { Arrow, EditorTool, GridSize, Point, SelectionArea, SolvabilityResult } 
 import { ArrowRenderer } from './ArrowRenderer';
 import {
   analyzeArrowExit,
+  buildBoardIndex,
   getDirectionVector,
   getHeadDirection,
   getReverseHeadDirection,
@@ -732,9 +733,10 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
   }
 
   // Precompute ray lines when showRays is enabled
-  const arrowRays = showRays
+  const rayBoard = showRays ? buildBoardIndex(arrows) : null;
+  const arrowRays = rayBoard
     ? arrows.flatMap((arr) => {
-        const analysis = analyzeArrowExit(arr, arrows, gridSize);
+        const analysis = analyzeArrowExit(arr, arrows, gridSize, rayBoard);
         const head = arr.points[arr.points.length - 1];
         const dir = getHeadDirection(arr);
         const v = getDirectionVector(dir);
