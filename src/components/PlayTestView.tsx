@@ -60,8 +60,9 @@ export const PlayTestView: React.FC<PlayTestViewProps> = ({
 
   const animFrameRef = useRef<number | null>(null);
 
-  // Clean up animation on unmount
+  // Decode the train sound early; clean up animation on unmount
   useEffect(() => {
+    sound.preloadTrain();
     return () => {
       if (animFrameRef.current !== null) {
         cancelAnimationFrame(animFrameRef.current);
@@ -162,7 +163,7 @@ export const PlayTestView: React.FC<PlayTestViewProps> = ({
     }
 
     // ALL TARGET ARROWS UNBLOCKED! ESCAPE!
-    sound.playWhoosh();
+    sound.playTrain();
     setHintArrowId(null);
 
     const exitDist = Math.max(level.gridSize.width, level.gridSize.height) + 10;
@@ -260,8 +261,6 @@ export const PlayTestView: React.FC<PlayTestViewProps> = ({
         // Animation complete!
         animFrameRef.current = null;
         setEscapingAnimState(null);
-        // Train sound only once the train has run off-screen
-        sound.playTrainExit();
 
         const targetIds = new Set(targetArrows.map((a) => a.id));
         const remaining = activeArrows.filter((a) => !targetIds.has(a.id));
